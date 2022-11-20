@@ -55,7 +55,7 @@ void wave_gauge_read(){
 }
 
 void torque_sensor_read(){
-  //NEEDS TO BE DONE - I think it needs to be calibrated manually because there is no data sheet for it
+  //NEEDS TO BE DONE - I think it needs to be calibrated manually because there is no data sheet for it. For this you use a known inertia in the output, accelerate at a know veloctiy and use Newton's II law torque = inertia*acceleration and measured the voltage output.
   //Measures torque from 0.5-150Nm and has an output signal of 0-20mA (not sure what capacity the one being used has)
   //https://www.ato.com/micro-reaction-torque-sensor-0d5-nm-to-150-nm
   //looks like it is connected to two pins
