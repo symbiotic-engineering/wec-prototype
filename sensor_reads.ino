@@ -37,6 +37,7 @@ void hall_sensor_read(){
 void batt_voltage_read(){
   reading_voltage = analogRead(battvoltsensorPin);
   vOut = (reading_voltage/1024)*vCC; //read the current sensor value (0-1023)
+  //We might need a voltage divider if we want max voltage to be 3.3 int he case of voltage measurements
   vIn = vOut*factor:
   Serial.print("Voltage = ");
   Serial.print(vIn);
@@ -45,7 +46,8 @@ void batt_voltage_read(){
 }
 void batt_current_sensor_read(){
   reading_current = analogRead(battcurrentsensorPin);
-  current = (reading_current/1024)*Vcc; //13.6 is the reference voltage for analog read in this sensor //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
+  current = (reading_current/1024)*3.3; //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
+  
   Serial.print("Source current= ");
   Serial.print(current);
 }
