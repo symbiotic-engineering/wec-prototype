@@ -60,7 +60,7 @@ void torque_sensor_read(){
   //https://www.ato.com/micro-reaction-torque-sensor-0d5-nm-to-150-nm
   //looks like it is connected to two pins
   
-  reading_wave_gauge = analogRead(torquesensorPin)
+  reading_torque_sensor = analogRead(torquesensorPin)
 }
 void loop() {
   // put your main code here, to run repeatedly:
