@@ -63,6 +63,7 @@ void torque_sensor_read(){
   //looks like it is connected to two pins
   
   reading_torque_sensor = analogRead(torquesensorPin)
+  //insert our conversion factor here
 }
 void loop() {
   // put your main code here, to run repeatedly:
