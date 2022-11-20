@@ -32,6 +32,7 @@ Serial.begin(9600);
 
 void hall_sensor_read(){
 //NEEDS TO BE DONE
+  reading_hall = analogRead(hallsensorPin)
 }
 void batt_voltage_read(){
   reading_voltage = analogRead(battvoltsensorPin);
@@ -50,10 +51,12 @@ void batt_current_sensor_read(){
 }
 void wave_gauge_read(){
   //NEEDS TO BE DONE
+  reading_wave_gauge = analogRead(wavegaugePin)
 }
 
 void torque_sensore_read(){
   //NEEDS TO BE DONE
+  reading_wave_gauge = analogRead(torquesensorPin)
 }
 void loop() {
   // put your main code here, to run repeatedly:
