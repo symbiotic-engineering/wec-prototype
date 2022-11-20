@@ -54,8 +54,12 @@ void wave_gauge_read(){
   reading_wave_gauge = analogRead(wavegaugePin)
 }
 
-void torque_sensore_read(){
-  //NEEDS TO BE DONE
+void torque_sensor_read(){
+  //NEEDS TO BE DONE - I think it needs to be calibrated manually because there is no data sheet for it
+  //Measures torque from 0.5-150Nm and has an output signal of 0-20mA (not sure what capacity the one being used has)
+  //https://www.ato.com/micro-reaction-torque-sensor-0d5-nm-to-150-nm
+  //looks like it is connected to two pins
+  
   reading_wave_gauge = analogRead(torquesensorPin)
 }
 void loop() {
