@@ -1,18 +1,35 @@
------VARIABLES-----
+// Power System Sensor Reading and State Machine Module
+// 
+// This module is split into two sections: the function d
+
+
+//---------------------------------------------------------------------------------------------
+// VARIABLES
+//---------------------------------------------------------------------------------------------
+
 //ASSIGNING VARIABLES TO EACH OF THE PIN CONNECTIONS
 const int hallsensorPin; //= pin number of the hall_sensor
 const int battvoltsensorPin; //= pin number of the battery voltage sensor
 const int battcurrentsensorPin; //= pin number of the battery current sensor
 const int wavegaugePin; //= pin number of the wave gauge
 const int torquesensorPin; //=pin number of the torque sensor
+
 //ASSIGNING VARIABLES FOR THE READINGS OF EACH OF THE PINS
 int reading_hall_sensor;
 
-float reading_voltage; //value on pin
-float vIn; // measured voltage 
+//value on pin
+float reading_voltage; 
+
+// measured voltage 
+float vIn; 
+
 float vOut;
-const float factor = 4.16; //Vin/Vout https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png reduction factor of the Voltage Sensor Shield
-const float vCC = 13.6; //input voltage for sensor
+
+//Vin/Vout https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png reduction factor of the Voltage Sensor Shield
+const float factor = 4.16; 
+
+//input voltage for sensor
+const float vCC = 13.6; 
 
 
 float reading_current;
@@ -21,6 +38,7 @@ float current;
 int reading_wave_gauge;
 int reading_torque_sensor;
 
+// -------------------- VOID SET UP --------------------
 void setup() {
 pinMode(hall_sensor, INPUT);
 pinMode(batt_volt_sensor, INPUT);
@@ -29,6 +47,13 @@ pinMode(wave_gauge, INPUT);
 pinMode(torque_sensor, INPUT);
 Serial.begin(9600);
 }
+
+
+//---------------------------------------------------------------------------------------------
+// Sensor Reading Functions 
+//---------------------------------------------------------------------------------------------
+
+// The power system has 5 total sensors.
 
 void hall_sensor_read(){
 //NEEDS TO BE DONE
@@ -65,7 +90,21 @@ void torque_sensor_read(){
   reading_torque_sensor = analogRead(torquesensorPin)
   //insert our conversion factor here
 }
+
+//---------------------------------------------------------------------------------------------
+// Finite State Machine 
+//---------------------------------------------------------------------------------------------
+
 void loop() {
   // put your main code here, to run repeatedly:
+
+  // ---------------------  State Definitions  --------------------
+
+  // ------------------------  State Logic  -----------------------
+
+  // ---------------------  State Transitions  --------------------
+
+  // -----------------------  State Outputs  ----------------------
+  
 
 }
