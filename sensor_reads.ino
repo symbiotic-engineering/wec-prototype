@@ -94,17 +94,58 @@ void torque_sensor_read(){
 //---------------------------------------------------------------------------------------------
 // Finite State Machine 
 //---------------------------------------------------------------------------------------------
+// Diagram available at https://tinyurl.com/7mwzab2m
 
 void loop() {
   // put your main code here, to run repeatedly:
 
   // ---------------------  State Definitions  --------------------
 
+  const int STATE_ROOT                    = 0;
+  const int STATE_START_PRECHARGE         = 1;
+  const int STATE_PRECHARGING_I           = 2;
+  const int STATE_PRECHARGING_II          = 3;
+  const int STATE_PRECHARGE_DONE          = 4;
+  const int STATE_SWITCHING               = 5;
+  const int STATE_REFILL_WAIT             = 6;
+  const int STATE_TORQUING                = 7;
+
   // ------------------------  State Logic  -----------------------
+
+  // Writes the logic to transition to the next state
+  volatile state_current;
+  volatile state_next;
+
+  if (e_stop){
+    state_current = STATE_ROOT;
+  }
+  else {
+    state_current = state_next;
+  }
 
   // ---------------------  State Transitions  --------------------
 
-  // -----------------------  State Outputs  ----------------------
+  // Fault trackers
+  volatile bool faults;
+  volatile bool solft_fault;
+  volatile bool hard_fault;
+  volatile bool fatal_fault;
+
+  // True if the state machine passed throug the precharging process
+  // False if there is no need to precharge again (hard & soft fault)
   
+  volatile bool it_comes_from_HV;
+
+  // Botton trackers
+  volatile bool advance;
+  volatile bool e_stop;
+
+  advance = 
+  
+
+  
+  
+  // -----------------------  State Outputs  ----------------------
+
 
 }
