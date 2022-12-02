@@ -2,7 +2,14 @@
 // 
 // This module is split into two sections: the function d
 
+// ---- Importing Libraries -----
+
+#include "vesc_uart.h"
+
+
 // ---- Definitions -----
+
+
 
 // We are creating a struct (short for structure) called vesc_reading, to hold all the values
 // embedded in the VESC's output
@@ -27,16 +34,7 @@ const int battcurrentsensorPin; //= pin number of the battery current sensor
 const int wavegaugePin; //= pin number of the wave gauge
 const int torquesensorPin; //=pin number of the torque sensor
 
-//ASSIGNING VARIABLES FOR THE READINGS OF EACH OF THE PINS
-int reading_hall_sensor;
 
-//value on pin
-float reading_voltage; 
-
-// measured voltage 
-float vIn; 
-
-float vOut;
 
 //Vin/Vout https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png reduction factor of the Voltage Sensor Shield
 const float factor = 4.16; 
@@ -45,22 +43,9 @@ const float factor = 4.16;
 const float vCC = 13.6; 
 
 
-float reading_current;
-float current;
-
-int reading_wave_gauge;
-int reading_torque_sensor;
-
-
 
 //---------------------------------------------------------------------------------------------
-// VOID SETUP
-//---------------------------------------------------------------------------------------------
-
-
-
-//---------------------------------------------------------------------------------------------
-// VOID SETUP
+// HELPER FUNCTIONS
 //---------------------------------------------------------------------------------------------
 
 // We define functions to 
@@ -88,13 +73,20 @@ void vesc_read(){
   reading_hall = analogRead(hallsensorPin)
   struct vesc_reading vesc_val;
 
-  vesc_val->current = 0.0;           //measured battery current
-  vesc_val->motor_current = 0.0;     //measured motor current
-  vesc_val->voltage = 0.0;           //measured battery voltage
-  vesc_val->c_speed = 0.0;           //measured rpm * Pi * wheel diameter [km] * 60 [minutes]
-  vesc_val->c_dist = 0.00;           //measured odometry tachometer [turns] * Pi * wheel diameter [km] 
-  vesc_val->power = 0.0;              //calculated power
+  if (vesc_get_values(VescMeasuredValues)) {
+      
+        // calculation of several values to be displayed later on
+        vesc_val.current = VescMeasuredValues.current_in;
+        vesc_val.voltage = VescMeasuredValues.v_in;
+        
+        vesc_val.motor_current = VescMeasuredValues.current_motor;
+        
+        vesc_val.c_speed = (VescMeasuredValues.rpm/38)*3.14159265359*0.000083*60;
+        vesc_val.c_dist = (VescMeasuredValues.tachometer/38)*3.14159265359*0.000083;
+        
+        vesc_val.power = current*voltage;
 
+  }
   //TODO: complete code to read the values above
   
 
