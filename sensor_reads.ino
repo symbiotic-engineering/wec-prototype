@@ -70,34 +70,43 @@ void batt_voltage_read(){
   // reference: https://github.com/BasOnTech/Arduino-Beginners-EN/blob/master/E17-voltage-sensor/voltage-sensor.ino 
 }
 void batt_current_sensor_read(){
+  // Returns: a current value, type int
   reading_current = analogRead(battcurrentsensorPin);
   current = (reading_current/1024)*3.3; //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
   
   Serial.print("Source current= ");
   Serial.print(current);
 }
+//TODO 
 void wave_gauge_read(){
-  //NEEDS TO BE DONE
-  reading_wave_gauge = analogRead(wavegaugePin)
+  //Returns: wave height value, type int
+  int wave_gauge_val = analogRead(wavegaugePin);
+  return wave_gauge_val;
 }
+
+//TODO 
+//I think it needs to be calibrated manually because there is no data sheet for it. For this you use a known inertia in the output, accelerate at a know veloctiy and use Newton's II law torque = inertia*acceleration and measured the voltage output.
+//Measures torque from 0.5-150Nm and has an output signal of 0-20mA (not sure what capacity the one being used has)
+//https://www.ato.com/micro-reaction-torque-sensor-0d5-nm-to-150-nm
+//looks like it is connected to two pins
 
 void torque_sensor_read(){
-  //NEEDS TO BE DONE - I think it needs to be calibrated manually because there is no data sheet for it. For this you use a known inertia in the output, accelerate at a know veloctiy and use Newton's II law torque = inertia*acceleration and measured the voltage output.
-  //Measures torque from 0.5-150Nm and has an output signal of 0-20mA (not sure what capacity the one being used has)
-  //https://www.ato.com/micro-reaction-torque-sensor-0d5-nm-to-150-nm
-  //looks like it is connected to two pins
-  
-  reading_torque_sensor = analogRead(torquesensorPin)
-  //insert our conversion factor here
+  // Torque sensor conversion ratio is k
+
+  // Returns: torque value, type int
+
+  // Note that 5 is a dummy value we have to CHANGE
+  int k = 5;
+
+  int torque_sensor_reading = analogRead(torquesensorPin);
+  //do conversion  here
+  int torque val = k*torque_sensor_read;
+
+  return torque_val;
 }
 
-//---------------------------------------------------------------------------------------------
-// Finite State Machine 
-//---------------------------------------------------------------------------------------------
-// Diagram available at https://tinyurl.com/7mwzab2m
-
-void loop() {
-  // put your main code here, to run repeatedly:
+char run_state_machine(int wave_gauge_val, int torque_val){
+// This
 
   // ---------------------  State Definitions  --------------------
 
@@ -133,19 +142,30 @@ void loop() {
 
   // True if the state machine passed throug the precharging process
   // False if there is no need to precharge again (hard & soft fault)
-  
+
   volatile bool it_comes_from_HV;
 
   // Botton trackers
   volatile bool advance;
   volatile bool e_stop;
 
-  advance = 
-  
+  //advance = 
 
-  
-  
+
+
+
   // -----------------------  State Outputs  ----------------------
 
 
+}
+
+//---------------------------------------------------------------------------------------------
+// Finite State Machine 
+//---------------------------------------------------------------------------------------------
+// Diagram available at https://tinyurl.com/7mwzab2m
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+  
 }
