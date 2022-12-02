@@ -51,23 +51,33 @@ float current;
 int reading_wave_gauge;
 int reading_torque_sensor;
 
-// -------------------- VOID SET UP --------------------
-void setup() {
-pinMode(hall_sensor, INPUT);
-pinMode(batt_volt_sensor, INPUT);
-pinMode(batt_current_sensor, INPUT);
-pinMode(wave_gauge, INPUT);
-pinMode(torque_sensor, INPUT);
-Serial.begin(9600);
-}
 
 
 //---------------------------------------------------------------------------------------------
+// VOID SETUP
+//---------------------------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------------------------
+// VOID SETUP
+//---------------------------------------------------------------------------------------------
+
+// We define functions to 
+      // 1. Read sensors
+      // 2. Detect Faults
+      // 3. Run the state machine
+
+
+
+//------------------------------------------------
 // Sensor Reading Functions 
-//---------------------------------------------------------------------------------------------
+//------------------------------------------------
 
 // The power system has 5 total sensors.
 
+
+// -------------------------------- vesc -----------
 // TO DO 
 // Implement UART vesc readings
 // Reference: https://github.com/R0b0shack/VESC-UART-Arduino/blob/master/VESC_UART_Nano.ino
@@ -91,6 +101,7 @@ void vesc_read(){
   return vesc_val
 }
 
+// -------------------------------- battery voltage -----------
 //TO document
 // reference: https://github.com/BasOnTech/Arduino-Beginners-EN/blob/master/E17-voltage-sensor/voltage-sensor.ino
 void batt_voltage_read(){
@@ -105,6 +116,8 @@ void batt_voltage_read(){
   return batt_voltage_val
 
 }
+
+// -------------------------------- battery current -----------
 void batt_current_sensor_read(){
   // Returns: a current value, type int
   reading_current = analogRead(battcurrentsensorPin);
@@ -115,6 +128,9 @@ void batt_current_sensor_read(){
 
   return batt_current_val
 }
+
+// -------------------------------- wave gauge -----------
+
 //TODO 
 void wave_gauge_read(){
   //Returns: wave height value, type int
@@ -123,6 +139,8 @@ void wave_gauge_read(){
   return wave_gauge_val;
 }
 
+
+// -------------------------------- torque sensor -----------
 //TODO 
 //I think it needs to be calibrated manually because there is no data sheet for it. For this you use a known inertia in the output, accelerate at a know veloctiy and use Newton's II law torque = inertia*acceleration and measured the voltage output.
 //Measures torque from 0.5-150Nm and has an output signal of 0-20mA (not sure what capacity the one being used has)
@@ -144,14 +162,38 @@ void torque_sensor_read(){
 }
 
 
-char run_state_machine(int wave_gauge_val, int torque_val, int batt_voltage_val, int batt_current_val, struct vesc_reading* vesc_val){
+//------------------------------------------------
+// 2. Check Faults
+//------------------------------------------------
+
+char check_faults (struct vesc_reading* vesc_val){
+  // Returns: the kind of fault (soft_fault / hard_fault / fatal_fault) if fault, otherwise default is "none"
+  // Parameter vesc_val: the output value of the vesc, type "struct vesc_reading" (we defined the vesc_reading structure in line 9)
+
+      // Note that we add the asterisk (*) because the parameter is in reality the pointer to the memory location of the 
+      //      structure's first value. C is very low level and you have to pass on where things are located in memory 
+
+  
+  char fault_type = "none";
+  return fault_type;
+
+}
+
+
+//------------------------------------------------
+// 3. State Machine 
+//------------------------------------------------
+
+// Diagram available at https://tinyurl.com/7mwzab2m
+char run_state_machine(char fault_type, int wave_gauge_val, int torque_val, int batt_voltage_val, int batt_current_val, struct vesc_reading* vesc_val){
   // Returns: the state machine's current state
 
+  // Paramenter fault_type: the type of fault, type char
   // Paramenter wave_gauge_val: the height of the wave, type int
   // Paramenter torque_val: the torque value read by the torque sensor, type int
   // Paramenter batt_voltage_val: the battery voltage value as read by the voltage/current sensor, type int
   // Paramenter batt_current_val: the battery current value as read by the voltage/current sensor, type int
-  // Paramenter vesc_val: the height of the wave, type "struct vesc_reading" (we defined the vesc_reading structure in line 9)
+  // Paramenter vesc_val: the output value of the vesc, type "struct vesc_reading" (we defined the vesc_reading structure in line 9)
 
       // Note that we add the asterisk (*) because the parameter is in reality the pointer to the memory location of the 
       //      structure's first value. C is very low level and you have to pass on where things are located in memory 
@@ -208,13 +250,29 @@ char run_state_machine(int wave_gauge_val, int torque_val, int batt_voltage_val,
   return state_current
 }
 
-//---------------------------------------------------------------------------------------------
-// Finite State Machine 
-//---------------------------------------------------------------------------------------------
-// Diagram available at https://tinyurl.com/7mwzab2m
 
+
+//---------------------------------------------------------------------------------------------
+// VOID SETUP
+//---------------------------------------------------------------------------------------------
+void setup() {
+pinMode(hall_sensor, INPUT);
+pinMode(batt_volt_sensor, INPUT);
+pinMode(batt_current_sensor, INPUT);
+pinMode(wave_gauge, INPUT);
+pinMode(torque_sensor, INPUT);
+Serial.begin(9600);
+}
+
+
+//---------------------------------------------------------------------------------------------
+// VOID LOOP
+//---------------------------------------------------------------------------------------------
 void loop() {
   // put your main code here, to run repeatedly:
+
+  read_sensors();
+  run_state_machine();
 
   
 }
