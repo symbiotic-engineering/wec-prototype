@@ -2,6 +2,19 @@
 // 
 // This module is split into two sections: the function d
 
+// ---- Definitions -----
+
+// We are creating a struct (short for structure) called vesc_reading, to hold all the values
+// embedded in the VESC's output
+  struct vesc_reading{
+    float current = 0.0;           //measured battery current
+    float motor_current = 0.0;     //measured motor current
+    float voltage = 0.0;           //measured battery voltage
+    float c_speed = 0.0;           //measured rpm * Pi * wheel diameter [km] * 60 [minutes]
+    float c_dist = 0.00;           //measured odometry tachometer [turns] * Pi * wheel diameter [km] 
+    double power = 0.0;              //calculated power
+};
+
 
 //---------------------------------------------------------------------------------------------
 // VARIABLES
@@ -55,32 +68,58 @@ Serial.begin(9600);
 
 // The power system has 5 total sensors.
 
-void hall_sensor_read(){
-//NEEDS TO BE DONE
+// TO DO 
+// Implement UART vesc readings
+// Reference: https://github.com/R0b0shack/VESC-UART-Arduino/blob/master/VESC_UART_Nano.ino
+
+void vesc_read(){
+  // Returns: a parsed, UART reading, type vesc_reading (the struct we defined at the beginning)
+
   reading_hall = analogRead(hallsensorPin)
+  vesc_reading vesc_val;
+
+  vesc_val->current = 0.0;           //measured battery current
+  vesc_val->motor_current = 0.0;     //measured motor current
+  vesc_val->voltage = 0.0;           //measured battery voltage
+  vesc_val->c_speed = 0.0;           //measured rpm * Pi * wheel diameter [km] * 60 [minutes]
+  vesc_val->c_dist = 0.00;           //measured odometry tachometer [turns] * Pi * wheel diameter [km] 
+  vesc_val->power = 0.0;              //calculated power
+
+  //TODO: complete code to read the values above
+  
+
+  return vesc_val
 }
+
+//TO document
+// reference: https://github.com/BasOnTech/Arduino-Beginners-EN/blob/master/E17-voltage-sensor/voltage-sensor.ino
 void batt_voltage_read(){
-  reading_voltage = analogRead(battvoltsensorPin);
+  voltage_val = analogRead(battvoltsensorPin);
   vOut = (reading_voltage/1024)*vCC; //read the current sensor value (0-1023)
   //We might need a voltage divider if we want max voltage to be 3.3 int he case of voltage measurements
   vIn = vOut*factor:
   Serial.print("Voltage = ");
   Serial.print(vIn);
   Serial.println("V");
-  // reference: https://github.com/BasOnTech/Arduino-Beginners-EN/blob/master/E17-voltage-sensor/voltage-sensor.ino 
+  
+  return voltage_val
+
 }
 void batt_current_sensor_read(){
   // Returns: a current value, type int
   reading_current = analogRead(battcurrentsensorPin);
-  current = (reading_current/1024)*3.3; //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
+  bat_current_val = (reading_current/1024)*3.3; //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
   
   Serial.print("Source current= ");
   Serial.print(current);
+
+  return bat_current_val
 }
 //TODO 
 void wave_gauge_read(){
   //Returns: wave height value, type int
   int wave_gauge_val = analogRead(wavegaugePin);
+
   return wave_gauge_val;
 }
 
@@ -94,7 +133,6 @@ void torque_sensor_read(){
   // Torque sensor conversion ratio is k
 
   // Returns: torque value, type int
-
   // Note that 5 is a dummy value we have to CHANGE
   int k = 5;
 
@@ -105,8 +143,12 @@ void torque_sensor_read(){
   return torque_val;
 }
 
-char run_state_machine(int wave_gauge_val, int torque_val){
-// This
+
+char run_state_machine(int wave_gauge_val, int torque_val, struct vesc_reading vesc_val){
+  // Returns: the state machine's current state
+  // Paramenter wave_gauge_val: the height of the wave, type int
+  // Paramenter torque_val: the torque value read by the torque sensor, type int
+  // Paramenter vesc_val: the height of the wave, type int
 
   // ---------------------  State Definitions  --------------------
 
