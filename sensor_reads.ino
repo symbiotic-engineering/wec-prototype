@@ -86,7 +86,7 @@ void vesc_read(){
   // Returns: a parsed, UART reading, type vesc_reading (the struct we defined at the beginning)
 
   reading_hall = analogRead(hallsensorPin)
-  vesc_reading vesc_val;
+  struct vesc_reading vesc_val;
 
   vesc_val->current = 0.0;           //measured battery current
   vesc_val->motor_current = 0.0;     //measured motor current
@@ -271,7 +271,13 @@ Serial.begin(9600);
 void loop() {
   // put your main code here, to run repeatedly:
 
-  read_sensors();
+  //Read sensors
+  int batt_voltage_val = batt_voltage_read();
+  int batt_current_val = batt_current_sensor_read();
+  int torque_val = torque_sensor_read();
+  struct vesc_reading = vesc_read();
+
+  check_faults();
   run_state_machine();
 
   
