@@ -102,7 +102,7 @@ void batt_voltage_read(){
   Serial.print(vIn);
   Serial.println("V");
   
-  return voltage_val
+  return batt_voltage_val
 
 }
 void batt_current_sensor_read(){
@@ -113,7 +113,7 @@ void batt_current_sensor_read(){
   Serial.print("Source current= ");
   Serial.print(current);
 
-  return bat_current_val
+  return batt_current_val
 }
 //TODO 
 void wave_gauge_read(){
@@ -144,11 +144,18 @@ void torque_sensor_read(){
 }
 
 
-char run_state_machine(int wave_gauge_val, int torque_val, struct vesc_reading vesc_val){
+char run_state_machine(int wave_gauge_val, int torque_val, int batt_voltage_val, int batt_current_val, struct vesc_reading* vesc_val){
   // Returns: the state machine's current state
+
   // Paramenter wave_gauge_val: the height of the wave, type int
   // Paramenter torque_val: the torque value read by the torque sensor, type int
-  // Paramenter vesc_val: the height of the wave, type int
+  // Paramenter batt_voltage_val: the battery voltage value as read by the voltage/current sensor, type int
+  // Paramenter batt_current_val: the battery current value as read by the voltage/current sensor, type int
+  // Paramenter vesc_val: the height of the wave, type "struct vesc_reading" (we defined the vesc_reading structure in line 9)
+
+      // Note that we add the asterisk (*) because the parameter is in reality the pointer to the memory location of the 
+      //      structure's first value. C is very low level and you have to pass on where things are located in memory 
+
 
   // ---------------------  State Definitions  --------------------
 
@@ -198,7 +205,7 @@ char run_state_machine(int wave_gauge_val, int torque_val, struct vesc_reading v
 
   // -----------------------  State Outputs  ----------------------
 
-
+  return state_current
 }
 
 //---------------------------------------------------------------------------------------------
