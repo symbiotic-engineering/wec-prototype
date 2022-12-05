@@ -40,7 +40,8 @@ const int torquesensorPin; //=pin number of the torque sensor
 const float factor = 4.16; 
 
 //input voltage for sensor
-const float vCC = 13.6; 
+const float vCC_voltmeter = 13.6; 
+
 
 
 
@@ -98,7 +99,7 @@ void vesc_read(){
 // reference: https://github.com/BasOnTech/Arduino-Beginners-EN/blob/master/E17-voltage-sensor/voltage-sensor.ino
 void batt_voltage_read(){
   voltage_val = analogRead(battvoltsensorPin);
-  vOut = (reading_voltage/1024)*vCC; //read the current sensor value (0-1023)
+  vOut = (reading_voltage/1024)*vCC; //read the current sensor value (0-1023) 
   //We might need a voltage divider if we want max voltage to be 3.3 int he case of voltage measurements
   vIn = vOut*factor:
   Serial.print("Voltage = ");
@@ -133,22 +134,19 @@ void wave_gauge_read(){
 
 
 // -------------------------------- torque sensor -----------
-//TODO 
-//I think it needs to be calibrated manually because there is no data sheet for it. For this you use a known inertia in the output, accelerate at a know veloctiy and use Newton's II law torque = inertia*acceleration and measured the voltage output.
-//Measures torque from 0.5-150Nm and has an output signal of 0-20mA (not sure what capacity the one being used has)
-//https://www.ato.com/micro-reaction-torque-sensor-0d5-nm-to-150-nm
-//looks like it is connected to two pins
 
 void torque_sensor_read(){
   // Torque sensor conversion ratio is k
 
   // Returns: torque value, type int
   // Note that 5 is a dummy value we have to CHANGE
-  int k = 5;
-
+  int k = 1.0361; //conversion factor found experimentally, note that there is also a y intercept in the graph
+  int Vin_torque_sensor = 5;
+  int V_modified = Vin_torque_sensor*(10/15) //the 10/15 is included because a voltage divider with R1= 5 kohms and R2=10 kohms is used to bring down Vcc of 5V to 3.3V
   int torque_sensor_reading = analogRead(torquesensorPin);
-  //do conversion  here
-  int torque val = k*torque_sensor_read;
+  int torque_val = k*(torque_sensor_reading/1024)*V_modified+0.1745; 
+  //the 1024 is included because that is the number of int in 10 bits
+  //the 0.1745 is included because that's where the torque sensor was zeroed
 
   return torque_val;
 }
