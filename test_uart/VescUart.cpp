@@ -27,7 +27,7 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 
 	//Messages <= 255 start with 2. 2nd byte is length
 	//Messages >255 start with 3. 2nd and 3rd byte is length combined with 1st >>8 and then &0xFF
-
+	
 	int counter = 0;
 	int endMessage = 256;
 	bool messageRead = false;
@@ -53,7 +53,9 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 			break;
 	}
 	#endif
+	//Serial.print("serial->available()");Serial.print(Serial3.available()); Serial.println();
 	while (serial->available()) {
+		Serial.println("On loop"); Serial.print(counter); Serial.println(" lenPayload is "); Serial.println( sizeof(lenPayload));
 
 		messageReceived[counter++] = serial->read();
 
@@ -64,6 +66,7 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 			case 2:
 				endMessage = messageReceived[1] + 5; //Payload size + 2 for sice + 3 for SRC and End.
 				lenPayload = messageReceived[1];
+				Serial.println("messageReceived[0] =2");
 				break;
 			case 3:
 				//ToDo: Add Message Handling > 255 (starting with 3)
@@ -73,6 +76,7 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 			}
 
 		}
+		
 		if (counter >= sizeof(messageReceived))
 		{
 			break;
@@ -165,7 +169,7 @@ int PackSendPayload(uint8_t* payload, int lenPay, int num) {
 
 
 	HardwareSerial *serial;
-  serial=&Serial3;
+	serial=&Serial3;
 	#if defined(ARDUINO_ARCH_STM32F4) 
 	switch (num) {
 		case 0:
@@ -176,6 +180,7 @@ int PackSendPayload(uint8_t* payload, int lenPay, int num) {
 			break;
 		case 2:
 			serial=&Serial2;
+		
 			break;
 		case 3:
 			serial=&Serial3;
@@ -230,6 +235,7 @@ bool VescUartGetValue(bldcMeasure& values, int num) {
 	PackSendPayload(command, 1, num);
 	delay(10); //needed, otherwise data is not read
 	int lenPayload = ReceiveUartMessage(payload, num);
+	Serial.println(sizeof(lenPayload));
 	if (lenPayload > 55) {
 		bool read = ProcessReadPacket(payload, values, lenPayload); //returns true if sucessful
 		return read;

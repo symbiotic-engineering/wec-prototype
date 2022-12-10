@@ -19,7 +19,7 @@ along with this program.If not, see <http://www.gnu.org/licenses/>.
 #ifndef _VESCUART_h
 #define _VESCUART_h
 
-//#include "Config.h"
+#include "Config.h"
 
 /*TThis library was created on an Adruinio 2560 with different serial ports to have a better possibility
 to debug. The serial ports are define with #define:
@@ -35,9 +35,8 @@ If you want to use debug, uncomment DEBUGSERIAL and define a port.*/
 #define SERIALIO Serial1
 #define SERIALIO2 Serial2
 #define SERIALIO3 Serial3
-#endif
-
 #define DEBUGSERIAL Serial
+#endif
 
 #ifdef ARDUINO_AVR_NANO
 #define SERIALIO Serial

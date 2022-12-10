@@ -11,8 +11,8 @@
 //Include libraries copied from VESC
 #include "VescUart.h"
 #include "datatypes.h"
-#include "Arduino.h"
-#include "HardwareSerial.h"
+//#include "Arduino.h"
+//#include "HardwareSerial.h"
 
 //const int PB10 = 29;
 //const int PB11 = 30;
@@ -27,14 +27,14 @@ void setup() {
 	
   //Serial3.setRx(PB11);
   //Serial3.setTx(PB10);
-  pinMode(PC1,OUTPUT);
+  //pinMode(PC1,OUTPUT);
 
 	//Setup UART port
-	//Serial2.begin(115200);
-  #ifdef DEBUG
+	//Serial3.begin(115200);
+ // #ifdef DEBUG
 	//SEtup debug port
 	Serial.begin(9600);
-	#endif
+	//#endif
 }
 
 //struct bldcMeasure measuredValues;
