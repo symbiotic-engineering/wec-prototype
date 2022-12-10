@@ -22,43 +22,20 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 // ---------------------------- Code Related to Reading Vesc Values over UART --
 
 #include "config.h"
-//#include "printf.h"
 #include "datatypes.h"
-
-// This library is the first one I found: it only implements reading UART values from the vesc
-    // and it's how I wrote the first part of the code. 
-#include "vesc_uart.h"
-
-
-//Library for the OLED Display
-mc_values VescMeasuredValues;
-
-float current = 0.0;           //measured battery current
-float motor_current = 0.0;     //measured motor current
-float voltage = 0.0;           //measured battery voltage
-float c_speed = 0.0;           //measured rpm * Pi * wheel diameter [km] * 60 [minutes]
-float c_dist = 0.00;           //measured odometry tachometer [turns] * Pi * wheel diameter [km] 
-double power = 0.0;            //calculated power
-mc_fault_code fault_code;      //fault code, see line 55 in datatypes.h to determine the values
-                                    // Note that this is an enum type, so fault_code can only be one value, a number from 0-6
-                                    // 
-
-// -------------------------- Code Related to Writing Vesc Commands over UART --
-
-                    // I found this library later, when wanting to write commands to the VESC. It implements both reading and writing values over UART through getters and setters.
 #include "vescUart.h"
-
-                    // This can be an update in the future, to make the code neater.
-                    // Because of time cosntraints, I did not pass all the code to only refer to the second vescUart library, which reads AND writes
-VescUart VESCUART;
+#include "HardwareSerial.h"
+#include "vescUart.h"
 
     // For motor control, we will need to set current, ideally positon and will not set rpm
     // The provided library doesn't support commanding position, so we'll only set current
 
 //Setup---------------------------------------------------------------------------------------------------------------------
+
 void setup()
 {
         Serial.begin(9600);
+        Serial3.begin(9600);
 	
 	// show text
 	Serial.println("System startup");
