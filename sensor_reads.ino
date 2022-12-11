@@ -127,8 +127,11 @@ void batt_current_sensor_read(){
 //TODO 
 void wave_gauge_read(){
   //Returns: wave height value, type int
-  int wave_gauge_val = analogRead(wavegaugePin);
-
+  int wave_gauge_reading = analogRead(wavegaugePin);
+  int ctt = 0.0389;
+  int V_in_wave_gauge = 12;
+  int V_modified_gage = V_in_wave_gauge*(5/15) //Voltage divider with R2 = 5 kOhms, R1=10 kOhms
+  int torque_val = k*(wave_gauge_reading/1024)*V_modified_gage-1.2281;
   return wave_gauge_val;
 }
 
