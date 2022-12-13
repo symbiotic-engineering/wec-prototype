@@ -4,7 +4,7 @@
 #include <ffconf_default_68300.h>
 #include <Sd2Card.h>
 #include <SdFatFs.h>
-#include <STM32SD.h>
+#include <STM32SD.h> // git clone "https://github.com/stm32duino/STM32SD.git"
 
 /*
   SD card datalogger
