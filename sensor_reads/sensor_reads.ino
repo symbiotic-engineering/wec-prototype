@@ -139,7 +139,7 @@ void torque_sensor_read(){
   // Torque sensor conversion ratio is k
 
   // Returns: torque value, type int
-  // Note that 5 is a dummy value we have to CHANGE
+ 
   int k = 1.0361; //conversion factor found experimentally, note that there is also a y intercept in the graph
   int Vin_torque_sensor = 5;
   int V_modified = Vin_torque_sensor*(10/15) //the 10/15 is included because a voltage divider with R1= 5 kohms and R2=10 kohms is used to bring down Vcc of 5V to 3.3V

@@ -18,7 +18,6 @@ along with this program.If not, see <http://www.gnu.org/licenses/>.
 #include "VescUart.h"
 #include "buffer.h"
 #include "crc.h"
-#include <inttypes.h>
 
 bool UnpackPayload(uint8_t* message, int lenMes, uint8_t* payload, int lenPa);
 bool ProcessReadPacket(uint8_t* message, bldcMeasure& values, int len);
@@ -35,7 +34,7 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 	uint8_t messageReceived[256];
 	int lenPayload = 0;
 	HardwareSerial *serial;
-	serial=&Serial3;
+	serial=&Serial;
 	#if defined(ARDUINO_ARCH_STM32F4) 
 	switch (num) {
 		case 0:
@@ -54,25 +53,14 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 			break;
 	}
 	#endif
-	
+	//Serial.print("serial->available()");Serial.print(Serial3.available()); Serial.println();
 	while (serial->available()) {
-    
 		Serial.println("On loop"); Serial.print(counter); Serial.println(" lenPayload is "); Serial.println( sizeof(lenPayload));
-    Serial.println( "message is = ");
-    Serial.printf(
-    "messageReceived:  %02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:\n",
-         messageReceived[50] , messageReceived[51] , messageReceived[52] ,
-         messageReceived[53] , messageReceived[54] , messageReceived[55] , 
-          messageReceived[56] , messageReceived[57] , 
-         messageReceived[58], messageReceived[59] , messageReceived[60] ,
-         messageReceived[61] , messageReceived[62]  );
 
-         Serial.print("serial->available()");Serial.print(Serial3.available()); Serial.println();
-    
 		messageReceived[counter++] = serial->read();
 
 		if (counter == 2) {//case if state of 'counter' with last read 1
-      Serial.println("counter =2");
+
 			switch (messageReceived[0])
 			{
 			case 2:
@@ -91,13 +79,10 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 		
 		if (counter >= sizeof(messageReceived))
 		{
-      Serial.println("greater than");
 			break;
 		}
 
 		if (counter == endMessage && messageReceived[endMessage - 1] == 3) {//+1: Because of counter++ state of 'counter' with last read = "endMessage"
-
-      Serial.println("counter = end message");
 			messageReceived[endMessage] = 0;
 #ifdef DEBUG
 			DEBUGSERIAL.println("End of message reached!");
@@ -108,7 +93,6 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 	}
 	bool unpacked = false;
 	if (messageRead) {
-    Serial.println("message was read");
 		unpacked = UnpackPayload(messageReceived, endMessage, payloadReceived, messageReceived[1]);
 	}
 	if (unpacked)
@@ -117,7 +101,6 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 
 	}
 	else {
-    Serial.println("Returning 0");
 		return 0; //No Message Read
 	}
 }
@@ -186,7 +169,7 @@ int PackSendPayload(uint8_t* payload, int lenPay, int num) {
 
 
 	HardwareSerial *serial;
-	serial=&Serial3;
+	serial=&Serial;
 	#if defined(ARDUINO_ARCH_STM32F4) 
 	switch (num) {
 		case 0:
