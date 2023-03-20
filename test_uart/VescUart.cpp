@@ -59,15 +59,24 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
     
 		Serial.println("On loop"); Serial.print(counter); Serial.println(" lenPayload is "); Serial.println( sizeof(lenPayload));
     Serial.println( "message is = ");
-    Serial.printf(
-    "messageReceived:  %02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:\n",
-         messageReceived[50] , messageReceived[51] , messageReceived[52] ,
-         messageReceived[53] , messageReceived[54] , messageReceived[55] , 
-          messageReceived[56] , messageReceived[57] , 
-         messageReceived[58], messageReceived[59] , messageReceived[60] ,
-         messageReceived[61] , messageReceived[62]  );
+    // Serial.printf(
+    // "messageReceived:  %02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:%02d:\n",
+    //      messageReceived[50] , messageReceived[51] , messageReceived[52] ,
+    //      messageReceived[53] , messageReceived[54] , messageReceived[55] , 
+    //       messageReceived[56] , messageReceived[57] , 
+    //      messageReceived[58], messageReceived[59] , messageReceived[60] ,
+    //      messageReceived[61] , messageReceived[62]  );
+    for (int i = 0; i < 256; i++){
+      Serial.print(messageReceived[i]);
+      Serial.print(": ");
+    }
+    Serial.println();
+    Serial.print("79th messageReceived = ");
+    Serial.println(messageReceived[79]);
 
-         Serial.print("serial->available()");Serial.print(Serial3.available()); Serial.println();
+         Serial.print("serial->available()");
+         Serial.print(Serial3.available()); 
+         Serial.println();
     
 		messageReceived[counter++] = serial->read();
 
@@ -77,6 +86,8 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 			{
 			case 2:
 				endMessage = messageReceived[1] + 5; //Payload size + 2 for sice + 3 for SRC and End.
+        Serial.print("endMessage =");
+        Serial.println(endMessage);
 				lenPayload = messageReceived[1];
 				Serial.println("messageReceived[0] =2");
 				break;
@@ -95,8 +106,8 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 			break;
 		}
 
+    //does not work! is never reached, loop ends before counter = endmessage = 79
 		if (counter == endMessage && messageReceived[endMessage - 1] == 3) {//+1: Because of counter++ state of 'counter' with last read = "endMessage"
-
       Serial.println("counter = end message");
 			messageReceived[endMessage] = 0;
 #ifdef DEBUG
@@ -122,6 +133,7 @@ int ReceiveUartMessage(uint8_t* payloadReceived, int num) {
 	}
 }
 
+//does not work! returns false!
 bool UnpackPayload(uint8_t* message, int lenMes, uint8_t* payload, int lenPay) {
 	uint16_t crcMessage = 0;
 	uint16_t crcPayload = 0;
@@ -222,6 +234,8 @@ bool ProcessReadPacket(uint8_t* message, bldcMeasure& values, int len) {
 	packetId = (COMM_PACKET_ID)message[0];
 	message++;//Eliminates the message id
 	len--;
+  Serial.println("processreadpacket packetid:");
+  Serial.println(packetId);
 
 	switch (packetId)
 	{
@@ -252,13 +266,14 @@ bool VescUartGetValue(bldcMeasure& values, int num) {
 	PackSendPayload(command, 1, num);
 	delay(10); //needed, otherwise data is not read
 	int lenPayload = ReceiveUartMessage(payload, num);
-	Serial.println(sizeof(lenPayload));
 	if (lenPayload > 55) {
 		bool read = ProcessReadPacket(payload, values, lenPayload); //returns true if sucessful
+    Serial.println("processreadpacket successful");
 		return read;
 	}
 	else
 	{
+    Serial.println("processreadpacket failed");
 		return false;
 	}
 }

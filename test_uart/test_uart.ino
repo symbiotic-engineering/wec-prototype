@@ -48,32 +48,33 @@ void loop() {
   uint8_t message[256];
 	len = ReceiveUartMessage(message,3);
   
-	if (len > 0)
-	{
-		len = PackSendPayload(message, len,3);
-    Serial.println("On loop"); Serial.print(count); Serial.println(" lenPayload is "); Serial.println( len);
-		len = 0;
-	}
+	// if (len > 0)
+	// {
+	// 	len = PackSendPayload(message, len,3);
+  //   Serial.println("On loop"); Serial.print(count); Serial.println(" lenPayload is "); Serial.println( len);
+	// 	len = 0;
+	// }
   
 //	Serial.print("Loop: "); Serial.println(count++);
   
 	if (VescUartGetValue(measuredValues)) {
+    Serial.print("Got values");
 		Serial.print("Loop: "); Serial.println(count++);
     Serial.print("Current is: ");
 		Serial.println(measuredValues.avgInputCurrent);
     //digitalWrite()
      //digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    delay(1000);  
+    delay(10000);  
                    // wait for a second
   //digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
    // Serial.println(measuredValues);
-    delay(1000);    
+    // delay(1000);    
 	}
 	else
 	{
 		Serial.println("Failed to get data!");
-     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(1000);                      // wait for a second
+    //  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+  delay(10000);                      // wait for a second
   
 	}
   
