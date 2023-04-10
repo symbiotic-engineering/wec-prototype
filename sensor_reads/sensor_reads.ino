@@ -99,10 +99,11 @@ vesc_reading vesc_read(){
 // -------------------------------- battery voltage -----------
 // reference: https://github.com/BasOnTech/Arduino-Beginners-EN/blob/master/E17-voltage-sensor/voltage-sensor.ino
 float batt_voltage_read(){
-  float voltage_reading = analogRead(battvoltsensorPin);
-  float vOut = (voltage_reading/1024)*vCC; //read the current sensor value (0-1023) 
-  //We might need a voltage divider if we want max voltage to be 3.3 int he case of voltage measurements
-  float batt_voltage_val = vOut*factor;
+  // Returns: voltage value, type float
+  float analog_reading = analogRead(battvoltsensorPin)/1024; //the 1024 is included because that is the number of int in 10 bits
+  float V_adc = analog_reading*3.3; //voltage level of microcontroller pin
+  float V_sensor = V_adc * 18.18/5; //the 15/5 is included because a voltage divider with R1= 13.18 kohms and R2=5 kohms is used to bring down sensor voltage of 12V to 3.3V
+  float batt_voltage_val = V_sensor * 4.1379; //https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png
   Serial.print("Voltage = ");
   Serial.println(batt_voltage_val);
   
@@ -112,10 +113,11 @@ float batt_voltage_read(){
 
 // -------------------------------- battery current -----------
 float batt_current_sensor_read(){
-  // Returns: a current value, type int
-  float current_reading = analogRead(battcurrentsensorPin);
-  float batt_current_val = (current_reading/1024)*3.3; //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
-  
+  // Returns: a current value, type float
+  float analog_reading = analogRead(battcurrentsensorPin)/1024; //the 1024 is included because that is the number of int in 10 bits
+  float V_adc = analog_reading*3.3; //voltage level of microcontroller pin
+  float batt_current_val = V_adc * 13.67; //https://cdn.sparkfun.com/assets/8/a/9/4/b/Current_to_Voltage_45a.png
+
   Serial.print("Source current= ");
   Serial.println(batt_current_val);
 
@@ -127,11 +129,11 @@ float batt_current_sensor_read(){
 float wave_gauge_read(){
   //Returns: wave height value, type float
 
-  float k = 25.7069; //conversion factor found experimentally, note that there is also a y intercept in the graph with value 31.619487
-  float wave_gauge_reading = analogRead(wavegaugePin)/1024; //the 1024 is included because that is the number of int in 10 bits
-  float V_adc = wave_gauge_reading * 3.3;
-  float V_sensor = V_adc * 15/5; //the 15/5 is included because a voltage divider with R1= 10 kohms and R2=5 kohms is used to bring down Vcc of 10V to 3.3V
-  float wave_gauge_val = k*V_sensor+31.619487; 
+  float k = 25.7069; //conversion factor found experimentally
+  float analog_reading = analogRead(wavegaugePin)/1024; //the 1024 is included because that is the number of int in 10 bits
+  float V_adc = analog_reading * 3.3; //voltage level of microcontroller pin
+  float V_sensor = V_adc * 15/5; //the 15/5 is included because a voltage divider with R1= 10 kohms and R2=5 kohms is used to bring down sensor voltage of 10V to 3.3V
+  float wave_gauge_val = k*V_sensor+31.619487; //y-intercept of 31.619487
 
   Serial.print("Wave gauge = ");
   Serial.println(wave_gauge_val);
@@ -144,16 +146,13 @@ float wave_gauge_read(){
 // -------------------------------- torque sensor -----------
 
 float torque_sensor_read(){
-  // Torque sensor conversion ratio is k
-
   // Returns: torque value, type float
  
   float k = 1.0361; //conversion factor found experimentally, note that there is also a y intercept in the graph
   float analog_reading = analogRead(torquesensorPin)/1024; //the 1024 is included because that is the number of int in 10 bits
-  float V_adc = analog_reading * 3.3;
-  float V_sensor = V_adc * 15/10; //the 15/10 is included because a voltage divider with R1= 5 kohms and R2=10 kohms is used to bring down Vcc of 5V to 3.3V
-  float torque_val = k*V_sensor+0.1745;
-  //the 0.1745 is included because that's where the torque sensor was zeroed
+  float V_adc = analog_reading * 3.3; //voltage level of microcontroller pin
+  float V_sensor = V_adc * 15/10; //the 15/10 is included because a voltage divider with R1= 5 kohms and R2=10 kohms is used to bring down sensor voltage of 5V to 3.3V
+  float torque_val = k*V_sensor+0.1745; //y-intercept of 0.1745
 
   Serial.print("Torque = ");
   Serial.println(torque_val);
