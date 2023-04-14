@@ -30,11 +30,12 @@ struct vesc_reading{
 //---------------------------------------------------------------------------------------------
 
 //ASSIGNING VARIABLES TO EACH OF THE PIN CONNECTIONS
+//https://learn.adafruit.com/adafruit-stm32f405-feather-express/pinouts
 //const int hallsensorPin; //= pin number of the hall_sensor
-const int battvoltsensorPin = 20; //= pin number of the battery voltage sensor
-const int battcurrentsensorPin = 21; //= pin number of the battery current sensor
-const int wavegaugePin = 19; //= pin number of the wave gauge
-const int torquesensorPin = 17; //=pin number of the torque sensor
+const int battvoltsensorPin = A4; //= pin number of the battery voltage sensor
+const int battcurrentsensorPin = A5; //= pin number of the battery current sensor
+const int wavegaugePin = A3; //= pin number of the wave gauge
+const int torquesensorPin = A1; //=pin number of the torque sensor
 
 
 
@@ -115,7 +116,7 @@ float batt_voltage_read(){
   // Returns: voltage value, type float
   float analog_reading = analogRead(battvoltsensorPin); //the 1024 is included because that is the number of int in 10 bits
   float V_adc = analog_reading/1024*3.3; //voltage level of microcontroller pin
-  float V_sensor = V_adc * 18.18/5; //the 15/5 is included because a voltage divider with R1= 13.18 kohms and R2=5 kohms is used to bring down sensor voltage of 12V to 3.3V
+  float V_sensor = V_adc * 37/10; //the 37/10 is included because a voltage divider with R1= 27 kohms and R2=10 kohms is used to bring down sensor voltage of 12V to 3.3V
   float batt_voltage_val = V_sensor * 4.1379; //https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png
   Serial.print("Battery Voltage = ");
   Serial.println(batt_voltage_val);
@@ -133,6 +134,8 @@ float batt_current_sensor_read(){
 
   Serial.print("Battery Current= ");
   Serial.println(batt_current_val);
+  Serial.println(V_adc);
+  Serial.println(analog_reading);
 
   return batt_current_val;
 }
@@ -164,13 +167,13 @@ float torque_sensor_read(){
   float k = 1.0361; //conversion factor found experimentally, note that there is also a y intercept in the graph
   float analog_reading = analogRead(torquesensorPin); //the 1024 is included because that is the number of int in 10 bits
   float V_adc = analog_reading / 1024 * 3.3; //voltage level of microcontroller pin
-  float V_sensor = V_adc * 15/10; //the 15/10 is included because a voltage divider with R1= 5 kohms and R2=10 kohms is used to bring down sensor voltage of 5V to 3.3V
+  float V_sensor_normalized = V_adc * 15/10; //the 15/10 is included because a voltage divider with R1= 5 kohms and R2=10 kohms is used to bring down sensor voltage of 5V to 3.3V
+  float V_sensor = 2 * (V_sensor_normalized - 2.595); //the sensor output is normalized from (-5,5) -> (0,5) using a resistor network
+  //https://oshgarage.com/reading-negative-voltages-with-an-adc-using-passives/
   float torque_val = k*V_sensor+0.1745; //y-intercept of 0.1745
 
   Serial.print("Torque = ");
   Serial.println(torque_val);
-  Serial.println(analogRead(torquesensorPin));
-  Serial.println(analog_reading);
 
   return torque_val;
 }
@@ -293,6 +296,7 @@ void setup() {
 void loop() {
 
   //Read sensors
+  UART.setCurrent(1);
   float batt_voltage_val = batt_voltage_read();
   float batt_current_val = batt_current_sensor_read();
   float wave_gauge_val = wave_gauge_read();
