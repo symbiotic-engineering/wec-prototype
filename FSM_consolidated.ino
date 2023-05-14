@@ -30,7 +30,7 @@ ezButton ESTOP(5);
 
 volatile float theta = 0;
 
-const float voltage_threshold = 10;
+const float voltage_threshold = 35.2;
 /* 
 NO FAULTS: fault = 0
 SOFT_FAULT: fault = 1
@@ -68,6 +68,7 @@ const int wavegaugePin = A3; //= pin number of the wave gauge
 const int torquesensorPin = A1; //=pin number of the torque sensor
 #define HIGH_SIDE_RELAY_PIN   23
 #define PRE_LOW_DIS_RELAY_PIN 25
+#define VESC_POWER_PIN 24
 
 
 //Vin/Vout https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png reduction factor of the Voltage Sensor Shield
@@ -114,7 +115,7 @@ vesc_reading vesc_read(){
       
     vesc_val.motor_current = UART.data.avgMotorCurrent;
         
-    vesc_val.c_speed = (UART.data.rpm)*(3.14159265359/60);
+    vesc_val.c_speed = (UART.data.rpm/21)*(3.14159265359/60); /*(UART.data.rpm)*(3.14159265359/60);*/
     vesc_val.tach = UART.data.tachometer;
         
     vesc_val.power = vesc_val.current*vesc_val.voltage;
@@ -126,12 +127,10 @@ vesc_reading vesc_read(){
     // Serial.println(vesc_val.voltage);
     // Serial.print("Motor Current = ");
     // Serial.println(vesc_val.motor_current);
-    //Serial.print("Speed = ");
-    //Serial.println(vesc_val.c_speed);
-    //Serial.print("Distance = ");
-    //Serial.println(vesc_val.c_dist);
-    //Serial.print("tach = ");
-    //Serial.println(UART.data.tachometer);
+    // Serial.print("Speed = ");
+    // Serial.println(vesc_val.c_speed);
+    // Serial.print("tach = ");
+    // Serial.println(vesc_val.tach);
     // Serial.print("Power = ");
     // Serial.println(vesc_val.power);
     // Serial.print("error = ");
@@ -239,7 +238,7 @@ void setup() {
   pinMode(HIGH_SIDE_RELAY_PIN, OUTPUT);
   pinMode(PRE_LOW_DIS_RELAY_PIN, OUTPUT);
 
-  pinMode(24, OUTPUT);
+  pinMode(VESC_POWER_PIN, OUTPUT);
 
   pinMode(battvoltsensorPin, INPUT);
   pinMode(battcurrentsensorPin, INPUT);
@@ -256,36 +255,37 @@ void setup() {
 
 
 void timer_ISR_state_machine(){
-  // current_vesc = vesc_read();
-  // flag_set(current_vesc);
-  // theta = 2 * 3.14159 * (fmod(current_vesc.tach, 126)/126);
+  current_vesc = vesc_read();
+  flag_set(current_vesc);
+  theta = 2 * 3.14159 * (current_vesc.tach/126);
+  // Serial.print("Angle = ");
   // Serial.println(degrees(theta));
   switch(current_state){
     case ROOT: // (ROOT->PRECHARGE) advance && !faults
       batt_voltage = 0;
       digitalWrite(HIGH_SIDE_RELAY_PIN, LOW);
       digitalWrite(PRE_LOW_DIS_RELAY_PIN, LOW);
-      digitalWrite(24, LOW);
+      digitalWrite(VESC_POWER_PIN, LOW);
       if(advance == 1 /*&& fault == NO_FAULT*/){
         current_state = PRECHARGE;
-        previousMillis = millis();
+        //previousMillis = millis();
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }
     
       break;
     case PRECHARGE: // (PRECHARGE->HIGH_VOLTAGE) !faults && bat_voltage_is_high_enough
       digitalWrite(HIGH_SIDE_RELAY_PIN, LOW);
       digitalWrite(PRE_LOW_DIS_RELAY_PIN, HIGH);
-      currentMillis = millis();
-      Serial.print("Battery Voltage = ");
-      Serial.println(batt_voltage_read());
+      //currentMillis = millis();
+      // Serial.print("Battery Voltage = ");
+      // Serial.println(batt_voltage_read());
       if(batt_voltage == 1/* && fault == NO_FAULT /*&& currentMillis - previousMillis > 3000*/){
         current_state = HIGH_VOLTAGE;
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }
       else if(fault == FATAL_FAULT){
         current_state = ROOT;
@@ -298,8 +298,8 @@ void timer_ISR_state_machine(){
       if(advance == 1 && fault == NO_FAULT){
         current_state = SWITCH_WAIT;
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }
       else if(fault == FATAL_FAULT){
         current_state = ROOT;
@@ -307,12 +307,13 @@ void timer_ISR_state_machine(){
       }
       break;
     case SWITCH_WAIT: // (SWITCH_WAIT->TORQUING) advance && !faults
-      digitalWrite(24, HIGH);
+      digitalWrite(VESC_POWER_PIN, HIGH);
+      //UART.setCurrent(0);
       if(advance == 1 && fault == NO_FAULT){
         current_state = TORQUING;
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }
       else if(fault == FATAL_FAULT){
         current_state = ROOT;
@@ -334,21 +335,26 @@ void timer_ISR_state_machine(){
       }
       else if(advance == 1 && fault == NO_FAULT){
         current_state = POWER_DOWN;
+        previousMillis = millis();
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }   
-      //else{
+      else{
         //UART.setCurrent(calcVoltage(1, current_vesc.c_speed, 2, theta, 3));
-        //Serial.println(theta);
-      //}
+        //Serial.print("Speed = ");
+        //Serial.println(current_vesc.c_speed);
+        //Serial.print("tach = ");
+        //Serial.println(current_vesc.tach);
+        calcVoltage(1, current_vesc.c_speed, 2, theta, 3);
+      }
       break;
     case SWITCH_AUTO: // (SWITCH_AUTO->TORQUING)!faults
       if(fault == NO_FAULT){
         current_state = TORQUING;
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }
       else if(fault == FATAL_FAULT){
         current_state = ROOT;
@@ -356,13 +362,13 @@ void timer_ISR_state_machine(){
       }
       break;
     case POWER_DOWN: // (SWITCH_AUTO->TORQUING)!faults
-      digitalWrite(HIGH_SIDE_RELAY_PIN, LOW);
-      digitalWrite(PRE_LOW_DIS_RELAY_PIN, LOW);
-      if(advance == 1){
+      UART.setCurrent(0);
+      currentMillis = millis();
+      if(currentMillis - previousMillis > 3000){
         current_state = ROOT;
         Serial.println(current_state);
-        Serial.print("Battery Voltage = ");
-        Serial.println(batt_voltage_read());
+        // Serial.print("Battery Voltage = ");
+        // Serial.println(batt_voltage_read());
       }
       else if(fault == FATAL_FAULT){
         current_state = ROOT;
@@ -404,7 +410,7 @@ void flag_set(vesc_reading temp_vesc){
   }
   if(batt_voltage_read() >= voltage_threshold){
     batt_voltage = 1;
-    Serial.println(batt_voltage_read());
+    // Serial.println(batt_voltage_read());
   }
 
   // Set faults
@@ -424,8 +430,8 @@ void flag_set(vesc_reading temp_vesc){
 
 void loop() {
   // put your main code here, to run repeatedly:
-  current_vesc = vesc_read();
-  flag_set(current_vesc);
+  // current_vesc = vesc_read();
+  // flag_set(current_vesc);
 
   float batt_voltage_val = batt_voltage_read();
   float batt_current_val = batt_current_sensor_read();
