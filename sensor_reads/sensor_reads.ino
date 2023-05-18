@@ -36,6 +36,8 @@ const int battvoltsensorPin = A4; //= pin number of the battery voltage sensor
 const int battcurrentsensorPin = A5; //= pin number of the battery current sensor
 const int wavegaugePin = A3; //= pin number of the wave gauge
 const int torquesensorPin = A1; //=pin number of the torque sensor
+const int advancePin = 6;
+const int estopPin = 5;
 
 
 
@@ -120,6 +122,8 @@ float batt_voltage_read(){
   float batt_voltage_val = V_sensor * 4.1379; //https://cdn.sparkfun.com/assets/c/a/a/4/6/Voltage_to_Voltage_45a.png
   Serial.print("Battery Voltage = ");
   Serial.println(batt_voltage_val);
+  Serial.println(V_adc);
+  Serial.println(V_sensor);
   
   return batt_voltage_val;
 
@@ -134,8 +138,6 @@ float batt_current_sensor_read(){
 
   Serial.print("Battery Current= ");
   Serial.println(batt_current_val);
-  Serial.println(V_adc);
-  Serial.println(analog_reading);
 
   return batt_current_val;
 }
@@ -278,6 +280,8 @@ void setup() {
   pinMode(battcurrentsensorPin, INPUT);
   pinMode(wavegaugePin, INPUT);
   pinMode(torquesensorPin, INPUT);
+  pinMode(advancePin, INPUT);
+  pinMode(estopPin, INPUT);
   Serial.begin(9600);
 
   /** Setup UART port (Serial1 on Atmega32u4) */
@@ -302,6 +306,10 @@ void loop() {
   float wave_gauge_val = wave_gauge_read();
   float torque_val = torque_sensor_read();
   struct vesc_reading vesc_val = vesc_read();
+  Serial.print("Advance pin = ");
+  Serial.println(digitalRead(advancePin));
+  Serial.print("Estop pin = ");
+  Serial.println(digitalRead(estopPin));
 
   //check_faults();
   //run_state_machine();
