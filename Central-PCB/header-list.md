@@ -1,8 +1,7 @@
 ## Ethernet Header
 
 ## UI Board
-3.3V - Yellow (+Power rail)
-
+3.3V - Yellow (+Power rail)/
 GND - Black (-power rail)
 EStop Signal - Brown N20R
 High_in AND Gate - Purple N6L
