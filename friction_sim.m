@@ -2,31 +2,43 @@ clear
 close all
 load('hydro_data.mat');
 
-gear_ratio = 5;%2:1:10;        % gear ratio range
-spring_size = 8:1:150;       % constant force spring size [N-m]
-omega_range = 40:1:50;  % location in w array of freqs 10-11.5 rad/s
+% parameters
+p = struct('Kh',new_K, ...  % hydrodynamic stiffness
+           'Ig',0.1,...     % moment of inertia of generator/powertrain
+           'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
+           'T_s',0.1,'T_d',0.1,'b',.1);  % static and dynamic friction torques and viscous friction coefficient
 
-GR_acceptable = [];         % not initialized correctly yet
-spring_acceptable = [];
-omega_acceptable = [];
+%  p = struct('Kh',-1, 'Bh',1, ...  % hydrodynamic stiffness and damping
+% 'I',0.14,'Ig',0.1,...     % moment of inertia of flap and generator/powertrain
+% 'w',5, 'Fh',3, ...   % wave frequency and exciting force amplitude
+% 'GR',2,'T_spring',10, ...      % gear ratio, spring torque
+% 'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
+% 'T_s',0.1,'T_d',0.1,'b',.1);  % static and dynamic friction torques and viscous friction coefficient
+
+gear_ratio = [5 10]; % gear ratio range
+spring_size = 8:1:20;  % constant force spring size [N-m]
+omega_idxs = 40:1:50;    % location in w array of freqs 10-11.5 rad/s
+
+is_acceptable_combo = false(length(gear_ratio),length(spring_size),length(omega_idxs));
+plot_timeseries = false;
+
+omegas = w_scaled(omega_idxs);
+[spring_mesh, omega_mesh] = meshgrid(spring_size,omegas);
 
 for i = 1:length(gear_ratio)
+
+    p.GR = gear_ratio(i); % gear ratio
+
     for j = 1:length(spring_size)
-        for k = omega_range
-            % parameters
-            p = struct('Kh',new_K, 'Bh',B_scaled(1,k), ...  % hydrodynamic stiffness and damping
-                       'I',I_A_scaled(1,k),'Ig',0.1,...     % moment of inertia of flap and generator/powertrain
-                       'w',w_scaled(1,k), 'Fh',T_body_scaled(1,k), ...   % wave frequency and exciting force amplitude
-                       'GR',gear_ratio(i),'T_spring',spring_size(j), ...      % gear ratio, spring torque
-                       'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
-                       'T_s',0.1,'T_d',0.1,'b',.1);  % static and dynamic friction torques and viscous friction coefficient
-            % 
-           %  p = struct('Kh',-1, 'Bh',1, ...  % hydrodynamic stiffness and damping
-           % 'I',0.14,'Ig',0.1,...     % moment of inertia of flap and generator/powertrain
-           % 'w',5, 'Fh',3, ...   % wave frequency and exciting force amplitude
-           % 'GR',2,'T_spring',10, ...      % gear ratio, spring torque
-           % 'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
-           % 'T_s',0.1,'T_d',0.1,'b',.1);  % static and dynamic friction torques and viscous friction coefficient
+
+        p.T_spring = spring_size(j); % spring torque
+
+        for k = 1:length(omega_idxs)
+            omega_idx = omega_idxs(k);
+            p.Bh = B_scaled(1,omega_idx); % hydrodynamic damping
+            p.I = I_A_scaled(1,omega_idx); % moment of inertia of flap
+            p.w = w_scaled(1,omega_idx); % wave frequency and 
+            p.Fh = T_body_scaled(1,omega_idx); % exciting force amplitude
 
             % impedance matching
             p.Kp = p.I * p.w^2 - p.Kh;
@@ -50,32 +62,35 @@ for i = 1:length(gear_ratio)
             if any(T_string <= 0)
                 warning('string has gone slack')
             else
-                disp('HOORAY')
-                disp('HOORAY')
-                disp('HOORAY')
-                disp('HOORAY')
-                GR_acceptable = gear_ratio(i);
-                spring_acceptable = spring_size(j);
-                omega_acceptable = w_scaled(1,k);
-                fprintf('ACCEPTABLE GR %f and Spring Force %f and Frequency %f\n',GR_acceptable,spring_acceptable,omega_acceptable)
-                GR_acceptable(i) = GR_acceptable;
-                spring_acceptable(i) = spring_acceptable;
-                omega_acceptable(i) = omega_acceptable;
-                % % plot solution
-                % figure
-                % plot(t,y,  t,T_gen, t,T_fric, t,T_string, t,P)
-                % xlabel('Time (s)')
-                % legend('$\theta$','$\dot{\theta}$','$T_{gen}$','$T_{fric}$','$T_{string}$', ...
-                %     'P','interpreter','latex','FontSize',14)
-                % 
-                % figure
-                % xlabel('Time (s)')
-                % ylabel('Integration Error')
-                % plot(t,err(1,:),t,err(2,:))
-                % legend('err_T (Nm)','err_v (m/s)')
+                is_acceptable_combo(i,j,k) = true;
+                fprintf('ACCEPTABLE GR %f and Spring Force %f and Frequency %f\n',gear_ratio(i),spring_size(j),w_scaled(1,omega_idx))
+
+                if plot_timeseries
+                    % plot solution
+                    figure
+                    plot(t,y,  t,T_gen, t,T_fric, t,T_string, t,P)
+                    xlabel('Time (s)')
+                    legend('$\theta$','$\dot{\theta}$','$T_{gen}$','$T_{fric}$','$T_{string}$', ...
+                        'P','interpreter','latex','FontSize',14)
+                    
+                    figure
+                    xlabel('Time (s)')
+                    ylabel('Integration Error')
+                    plot(t,err(1,:),t,err(2,:))
+                    legend('err_T (Nm)','err_v (m/s)')
+                end
             end
         end
     end
+
+    acceptable = is_acceptable_combo(i,:,:);
+    figure
+    pcolor(spring_mesh, omega_mesh, double(squeeze(acceptable))')
+    colorbar
+    xlabel('spring torque Nm')
+    ylabel('frequency rad/s')
+    title(['Acceptable combinations for preventing slackness for GR=' num2str(gear_ratio(i))])
+    clim([0 1])
 end
 
 
