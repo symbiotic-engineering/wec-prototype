@@ -15,9 +15,9 @@ p = struct('Kh',new_K, ...  % hydrodynamic stiffness
 % 'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
 % 'T_s',0.1,'T_d',0.1,'b',.1);  % static and dynamic friction torques and viscous friction coefficient
 
-gear_ratio = [5 10]; % gear ratio range
-spring_size = 8:1:20;  % constant force spring size [N-m]
-omega_idxs = 40:1:50;    % location in w array of freqs 10-11.5 rad/s
+gear_ratio = [1 5]; % gear ratio range
+spring_size = 10:1:20;%3:1:4;  % constant force spring size [N-m]
+omega_idxs = 20:1:30;    % location in w array of freqs 10-11.5 rad/s
 
 is_acceptable_combo = false(length(gear_ratio),length(spring_size),length(omega_idxs));
 plot_timeseries = false;
@@ -110,7 +110,7 @@ function [err,P,T_gen,T_fric,T_string] = dynamics(t,y,yp,p)
     GR_eff = p.GR * cos(alpha);
     
     % hydro torques on flap
-    T_exc = p.Fh * sin(p.w * t);
+    T_exc = p.Fh;% * sin(p.w * t);
     T_hydro = p.Kh * th + p.Bh * th_dot;
     T_inertia = p.I * th_ddot;
     

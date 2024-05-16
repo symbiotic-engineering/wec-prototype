@@ -2,9 +2,6 @@
 addpath(genpath(pwd));
 hydro = struct();
 hydro = readWAMIT(hydro,'oswec.out',[]); % function from WECSim
-% load('A_capy.mat');
-% load('B_capy.mat');
-% load('w_capy.mat');
 
 [A,B,K,gamma,rho,g,w] = extractData(hydro);
 
@@ -37,13 +34,23 @@ xlabel('\omega [rad/s]')
 ylabel('Body Torque [N-m]')
 
 B_scaled = B./(lambda^(4.5));
-K_scaled = K./(lambda^4);
+new_K = 0.8580;
+
+K_scaled = new_K;%K./(lambda^4);
 B_pto_scaled = B_pto./(lambda^(4.5));
 K_pto_scaled = K_pto./(lambda^4);
 I_A_scaled = (I + A)./(lambda^5);
 A_scaled = A./(lambda^5);
 w_scaled = w.*sqrt(lambda);
 theta_mag_scaled = theta_mag.*(lambda/beta);
+
+plot(w_scaled,A_scaled)
+xlabel('scaled omega')
+ylabel('scaled added mass')
+plot(w_scaled,B_scaled)
+xlabel('scaled omega')
+ylabel('scaled damping')
+
 F_powertrain = sqrt((K_pto_scaled.*theta_mag_scaled).^2 + (B_pto_scaled.*w_scaled.*theta_mag_scaled).^2);%./gear_ratios';
 %F_powertrain = sqrt((K_pto_scaled.*theta_mag_scaled).^2 + (B_pto_scaled.*w_scaled).^2);%./gear_ratios';
 figure(30)
@@ -58,11 +65,26 @@ legend
 % plot(w_scaled,excess_torque)
 
 mterm_scaled = I_A_scaled.*(w_scaled.^2).*theta_mag_scaled;
-bterm_scaled = (B_scaled + B_pto_scaled).*w_scaled.*theta_mag_scaled;
-kterm_scaled = (K_scaled + K_pto_scaled).*theta_mag_scaled;
+bterm_scaled = (B_scaled).*w_scaled.*theta_mag_scaled;%(B_scaled + B_pto_scaled).*w_scaled.*theta_mag_scaled;
+kterm_scaled = (K_scaled).*theta_mag_scaled;%(K_scaled + K_pto_scaled).*theta_mag_scaled;
+
+figure(57)
+hold on
+plot(w_scaled,mterm_scaled)
+plot(w_scaled,bterm_scaled)
+plot(w_scaled,kterm_scaled)
+xlabel('scaled omega')
+ylabel('force component magnitude')
+legend('mass term','damping term','stiffness term')
+
 T_body_scaled = mterm_scaled + bterm_scaled + kterm_scaled; %%% used as input 
 
-T_motor_scaled = T_body_scaled./gear_ratios';
+length = 0.38;        % Length (in meters)
+x_motion = length.*sin(theta_mag_scaled);
+F_hydro = T_body_scaled./x_motion;
+plot(x_motion)
+
+T_motor_scaled = T_body_scaled;%./gear_ratios';
 
 % to find actual motor torque it's sum of squares square rooted
 % MDOCEAN DOES THIS!!!! HURRAH
