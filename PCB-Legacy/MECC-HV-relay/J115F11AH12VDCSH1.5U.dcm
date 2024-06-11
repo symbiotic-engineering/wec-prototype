@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP J115F11AH12VDCSH1.5U
+D RELAY GEN PURPOSE SPST 50A 12V
+K
+F https://www.citrelay.com/Catalog Pages/RelayCatalog/J115F1.pdf
+$ENDCMP
+#
+#End Doc Library
