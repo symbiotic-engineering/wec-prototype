@@ -1,6 +1,16 @@
 #include <ezButton.h>
 #include <VescUart.h>
 #include <math.h>
+#include <STM32SD.h>
+
+// If SD card slot has no detect pin then define it as SD_DETECT_NONE
+// to ignore it. One other option is to call 'SD.begin()' without parameter.
+#ifndef SD_DETECT_PIN
+#define SD_DETECT_PIN SD_DETECT_NONE
+#endif
+
+
+File dataFile;
 
 /* Timer interrupt definitions */
 #define TIMER_INTERRUPT_DEBUG         0
@@ -26,7 +36,7 @@ ezButton ESTOP(5);
 
 volatile float theta = 0;
 
-const float voltage_threshold = 35.2;
+const float voltage_threshold = 10.8;
 /* 
 NO FAULTS: fault = 0
 SOFT_FAULT: fault = 1
@@ -216,11 +226,34 @@ STM32Timer ITimer0(TIM1);
 #define TIMER0_INTERVAL_MS 10
 
 void setup() {
-  // put your setup code here, to run once:
-
+ 
   //Initialize serial monitor
   //Note: make sure this matches the baud rate of your serial monitor
   Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for Leonardo only
+  }
+
+  // Serial.print("Initializing SD card...");
+  // // see if the card is present and can be initialized:
+  // while (!SD.begin(SD_DETECT_PIN))
+  // {
+  //   delay(10);
+  // }
+  // delay(100);
+  // Serial.println("card initialized.");
+
+  // // open the file. note that only one file can be open at a time,
+  // // so you have to close this one before opening another.
+  // dataFile = SD.open("datalog.txt", FILE_WRITE);
+  // // if the file is available, seek to last position
+  // if (dataFile) {
+  //   dataFile.seek(dataFile.size());
+  // }
+  // // if the file isn't open, pop up an error:
+  // else {
+  //   Serial.println("error opening datalog.txt");
+  // }
 
   //Intialize Timer Interrupt
   //Timer is set to interrupt every 10ms creating a polling frequency of 100Hz
@@ -243,6 +276,10 @@ void setup() {
   pinMode(battcurrentsensorPin, INPUT);
   pinMode(wavegaugePin, INPUT);
   pinMode(torquesensorPin, INPUT);
+  pinMode(9, INPUT);
+  pinMode(10, INPUT);
+  pinMode(11, INPUT);
+  pinMode(12, INPUT);
 
 
   /** Setup UART port (Serial3 on STM32 Feather) */
@@ -331,7 +368,12 @@ void timer_ISR_state_machine(){
         Serial.println(current_state);
       }   
       else{
-        UART.setCurrent(calcVoltage(1, current_vesc.c_speed, 2, theta, 3));
+        if(Serial.available() > 0){
+          float floatVariable = Serial.parseFloat();
+          UART.setCurrent(floatVariable);
+        }
+
+        //UART.setCurrent(calcVoltage(1, current_vesc.c_speed, 2, theta, 3));
         //calcVoltage(1, current_vesc.c_speed, 2, theta, 3);
       }
       break;
@@ -389,6 +431,7 @@ void flag_set(vesc_reading temp_vesc){
   // Sets batt_voltage to 1 if the voltage sensor reading exceeds voltage_threshold
   if(batt_voltage_read() >= voltage_threshold){
     batt_voltage = 1;
+    //Serial.println(batt_voltage);
     // Serial.println(batt_voltage_read());
   }
 
@@ -412,6 +455,32 @@ void loop() {
   // current_vesc = vesc_read();
   // flag_set(current_vesc);
 
+  // make a string for assembling the data to log:
+  String dataString = "";
+
+  // read three sensors and append to the string:
+  for (int analogPin = 0; analogPin < 3; analogPin++) {
+    int sensor = analogPin;
+    dataString += String(sensor);
+    if (analogPin < 2) {
+      dataString += ",";
+    }
+  }
+
+
+  // if the file is available, write to it:
+  // if (dataFile) {
+  //   dataFile.println(dataString);
+  //   dataFile.flush(); // use flush to ensure the data written
+  //   // print to the serial port too:
+  //   Serial.println(dataString);
+  // }
+  // // if the file isn't open, pop up an error:
+  // else {
+  //   Serial.println("error on datalog.txt file handle");
+  // }
+  // delay(100);
+  
   float batt_voltage_val = batt_voltage_read();
   float batt_current_val = batt_current_sensor_read();
   float wave_gauge_val = wave_gauge_read();

@@ -23,10 +23,10 @@ float calcVoltage(float I, float w_motor, float w_wave, float theta, int RMtype)
 
   float I_desired = F_desired * r_pinion * k_b;
 
-  Serial.print("kp*x = ");
-  Serial.println(kp*x);
-  Serial.print("bp*v = ");
-  Serial.println(bp*v);
+  //Serial.print("kp*x = ");
+  //Serial.println(kp*x);
+  //Serial.print("bp*v = ");
+  //Serial.println(bp*v);
   Serial.print("I_desired = ");
   Serial.println(I_desired);
 
