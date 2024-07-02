@@ -1,4 +1,6 @@
 % finding hydro coefficients for OSWEC to be used for scaling
+clear;clc;close all
+
 addpath(genpath(pwd));
 hydro = struct();
 hydro = readWAMIT(hydro,'oswec.out',[]); % function from WECSim
@@ -6,21 +8,22 @@ hydro = readWAMIT(hydro,'oswec.out',[]); % function from WECSim
 [A,B,K,gamma,rho,g,w] = extractData(hydro);
 
 I = 1850000;                % moment of inertia [kg-m^2]
-H_s = 1;
-lambda = 36;                % Froude scaling factor
-beta = H_s/0.029;           % wave height ratio
+H = 1;
+lambda = 50;                % Froude scaling factor
+beta = lambda; %H/0.029;           % wave height ratio
 
 B_pto = B;
 K_pto = (I + A).*w.^2 - K;
 
-numerator = gamma.*(H_s/2);
+numerator = gamma.*(H/2);
 denominator = (-1.*(I + A).*w.^2 + K + K_pto).^2 + ((B + B_pto).*w).^2;
 
 theta_mag = numerator./sqrt(denominator);
-mterm = (I + A).*(w.^2).*theta_mag;
-bterm = (B + B_pto).*w.*theta_mag;
-kterm = (K + K_pto).*theta_mag;
-T_body = mterm + bterm + kterm;
+
+% mterm = (I + A).*(w.^2).*theta_mag;
+% bterm = (B + B_pto).*w.*theta_mag;
+% kterm = (K + K_pto).*theta_mag;
+% T_body = mterm + bterm + kterm;
 
 % gear_ratios = 1:1:8;
 % T_motor = T_body./gear_ratios';     % excitation
@@ -28,10 +31,10 @@ T_body = mterm + bterm + kterm;
 % figure(10)
 % plot(w,T_motor)
 
-figure(5)
-plot(w,T_body);
-xlabel('\omega [rad/s]')
-ylabel('Body Torque [N-m]')
+% figure(5)
+% plot(w,T_body);
+% xlabel('\omega [rad/s]')
+% ylabel('Body Torque [N-m]')
 
 B_scaled = B./(lambda^(4.5));
 new_K = 0.8580;
@@ -51,12 +54,14 @@ plot(w_scaled,B_scaled)
 xlabel('scaled omega')
 ylabel('scaled damping')
 
-F_powertrain = sqrt((K_pto_scaled.*theta_mag_scaled).^2 + (B_pto_scaled.*w_scaled.*theta_mag_scaled).^2);%./gear_ratios';
-%F_powertrain = sqrt((K_pto_scaled.*theta_mag_scaled).^2 + (B_pto_scaled.*w_scaled).^2);%./gear_ratios';
-figure(30)
-plot(w_scaled,F_powertrain)
+T_powertrain = theta_mag_scaled .* sqrt(K_pto_scaled.^2 + (B_pto_scaled.*w_scaled).^2);%./gear_ratios';
+
+figure
+plot(w_scaled,T_powertrain)
+xlim([0 7])
+ylim([0 30])
 xlabel('Scaled \omega [rad/s]')
-ylabel('Scaled Powertrain Torque [N-m]')
+ylabel('Scaled Powertrain Torque on Flap [N-m]')
 legend
 
 % proto_motor_max = 4;        % [N-m]
@@ -64,29 +69,31 @@ legend
 % figure(40)
 % plot(w_scaled,excess_torque)
 
-mterm_scaled = I_A_scaled.*(w_scaled.^2).*theta_mag_scaled;
-bterm_scaled = (B_scaled).*w_scaled.*theta_mag_scaled;%(B_scaled + B_pto_scaled).*w_scaled.*theta_mag_scaled;
-kterm_scaled = (K_scaled).*theta_mag_scaled;%(K_scaled + K_pto_scaled).*theta_mag_scaled;
+% mterm_scaled = I_A_scaled.*(w_scaled.^2).*theta_mag_scaled;
+% bterm_scaled = (B_scaled).*w_scaled.*theta_mag_scaled;%(B_scaled + B_pto_scaled).*w_scaled.*theta_mag_scaled;
+% kterm_scaled = (K_scaled).*theta_mag_scaled;%(K_scaled + K_pto_scaled).*theta_mag_scaled;
+% 
+% figure(57)
+% hold on
+% plot(w_scaled,mterm_scaled)
+% plot(w_scaled,bterm_scaled)
+% plot(w_scaled,kterm_scaled)
+% xlabel('scaled omega')
+% ylabel('force component magnitude')
+% legend('mass term','damping term','stiffness term')
 
-figure(57)
-hold on
-plot(w_scaled,mterm_scaled)
-plot(w_scaled,bterm_scaled)
-plot(w_scaled,kterm_scaled)
-xlabel('scaled omega')
-ylabel('force component magnitude')
-legend('mass term','damping term','stiffness term')
+% T_body_scaled = mterm_scaled + bterm_scaled + kterm_scaled; %%% used as input 
 
-T_body_scaled = mterm_scaled + bterm_scaled + kterm_scaled; %%% used as input 
+% length = 0.38;        % Length (in meters)
+% x_motion = length.*sin(theta_mag_scaled);
+% F_hydro = T_body_scaled./x_motion;
+% figure
+% plot(x_motion)
+% title('x motion')
 
-length = 0.38;        % Length (in meters)
-x_motion = length.*sin(theta_mag_scaled);
-F_hydro = T_body_scaled./x_motion;
-plot(x_motion)
-
-T_motor_scaled = T_body_scaled;%./gear_ratios';
-
-% to find actual motor torque it's sum of squares square rooted
-% MDOCEAN DOES THIS!!!! HURRAH
-figure(15)
-plot(w_scaled,T_motor_scaled)
+% T_motor_scaled = T_body_scaled;%./gear_ratios';
+% 
+% % to find actual motor torque it's sum of squares square rooted
+% % MDOCEAN DOES THIS!!!! HURRAH
+% figure(15)
+% plot(w_scaled,T_motor_scaled)
