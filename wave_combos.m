@@ -14,10 +14,10 @@ D = .3; % diameter of WEC, based on what fits in width of wave tank
 h = 3; % water depth (here made artificially high so that whole plot shows)
 
 % all numbers represent tank scale not full scale
-Hs = linspace(0.01, .85, 100); % m, peak to peak
+H = linspace(0.01, .2, 100); % m, peak to peak
 f = linspace(.42, 2, 100); % Hz
 
-[H_mesh, f_mesh] = meshgrid(Hs,f); % this assumes regular wave, not irregular (Hs =/= H)
+[H_mesh, f_mesh] = meshgrid(H,f); % this assumes regular wave, not irregular (Hs =/= H)
 A_mesh = H_mesh / 2; % amplitude [m]
 w_mesh = 2*pi*f_mesh; % frequency [rad/s]
 T_mesh = 1./f_mesh; % period [s]
@@ -70,8 +70,8 @@ figure
 contourf(H_mesh, f_mesh, P_wave)
 hold on
 for i=1:length(schools)
-    plot([0 max(Hs)],[f_min(i) f_min(i)],'r--')
-    text(max(Hs)/2, f_min(i)+.03,['\uparrow ', schools{i}],'Color','r')
+    plot([0 max(H)],[f_min(i) f_min(i)],'r--')
+    text(max(H)/2, f_min(i)+.03,['\uparrow ', schools{i}],'Color','r')
 end
 xlabel('H (m)')
 ylabel('f (Hz)')
