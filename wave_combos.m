@@ -61,9 +61,9 @@ title('Conditions Met')
 colorbar
 
 % deep water criteria solved for each tank depth
-m_to_ft = 3.28;
-h_schools = [1.5/m_to_ft .7 4/m_to_ft 8/m_to_ft 1.36];
-schools = {'Cornell','UMaine','MIT','UNH','Oregon'};
+ft_to_m = 1/3.28;
+h_schools = [1.5*ft_to_m, 0.7,     4*ft_to_m, 8*ft_to_m, 1.36];
+schools =  {'Cornell',   'UMaine', 'MIT',     'UNH',     'Oregon'};
 f_min = sqrt(2*g./h_schools)/(2*pi);
 
 figure
