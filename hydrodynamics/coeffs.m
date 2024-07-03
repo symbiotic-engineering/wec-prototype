@@ -1,99 +1,96 @@
-% finding hydro coefficients for OSWEC to be used for scaling
-clear;clc;close all
 
-addpath(genpath(pwd));
-hydro = struct();
-hydro = readWAMIT(hydro,'oswec.out',[]); % function from WECSim
+function [w_scaled, mI_A_scaled, B_scaled, K_scaled, gamma_scaled] = coeffs(dof,lambda,plot_on)
+% finding hydro coefficients after Froude scaling
 
-[A,B,K,gamma,rho,g,w] = extractData(hydro);
+if nargin == 0
+    dof = 5;
+    plot_on = true;
+    lambda = 50; % Froude scaling factor
+    close all
+end
 
-I = 1850000;                % moment of inertia [kg-m^2]
-H = 1;
-lambda = 50;                % Froude scaling factor
-beta = lambda; %H/0.029;           % wave height ratio
+[A,B,K,gamma,~,g,w] = extractData(dof);
 
+% full scale parameters
+if dof == 5
+    m_I = 1850000;                  % moment of inertia [kg-m^2]
+elseif dof == 3
+    m_I = 725833;                   % RM3 float mass [kg]
+end
+
+% full scale reactive control
 B_pto = B;
-K_pto = (I + A).*w.^2 - K;
+K_pto = (m_I + A).*w.^2 - K;
 
-numerator = gamma.*(H/2);
-denominator = (-1.*(I + A).*w.^2 + K + K_pto).^2 + ((B + B_pto).*w).^2;
+% Froude scaling
+if dof == 5
+    expo_B = 4.5;
+    expo_K = 4;
+    expo_A = 5;
+    expo_G = 3;
+elseif dof == 3
+    expo_B = 2.5;
+    expo_K = 2;
+    expo_A = 3;
+    expo_G = 2;
+end
+expo_w = -1/2;
 
-theta_mag = numerator./sqrt(denominator);
+B_scaled = B./(lambda^expo_B);
+K_scaled = K./(lambda^expo_K);
+B_pto_scaled = B_pto./(lambda^expo_B);
+K_pto_scaled = K_pto./(lambda^expo_K);
+mI_A_scaled = (m_I + A)./(lambda^expo_A);
+A_scaled = A./(lambda^expo_A);
+w_scaled = w./(lambda^expo_w);
+gamma_scaled = gamma./(lambda^expo_G);
 
-% mterm = (I + A).*(w.^2).*theta_mag;
-% bterm = (B + B_pto).*w.*theta_mag;
-% kterm = (K + K_pto).*theta_mag;
-% T_body = mterm + bterm + kterm;
+if plot_on
+    % full scale transfer function
+    numerator = gamma;
+    denominator = (-1.*(m_I + A).*w.^2 + K + K_pto).^2 + ((B + B_pto).*w).^2;
+    RAO = numerator./sqrt(denominator); % WEC amplitude per unit wave amplitude full scale
+    WEC_amp_mag_over_H = RAO * 1/2; % WEC amplitude per unit wave height full scale
+    WEC_amp_mag_over_H_scaled = WEC_amp_mag_over_H; % stays constant over Froude scaling
 
-% gear_ratios = 1:1:8;
-% T_motor = T_body./gear_ratios';     % excitation
-% [X,Y] = meshgrid(w,gear_ratios);
-% figure(10)
-% plot(w,T_motor)
+    % scaled powertrain torque
+    H_scaled = 0.01;            % wave height [m] used in wave tank
+    T_powertrain = H_scaled * WEC_amp_mag_over_H_scaled .* sqrt(K_pto_scaled.^2 + (B_pto_scaled.*w_scaled).^2);%./gear_ratios';
+    
+    % deep water condition
+    depth = 1.36; % Oregon tank depth [m]
+    w_min_deepwater = sqrt(2*g./depth); % w^2/g * depth > 2
 
-% figure(5)
-% plot(w,T_body);
-% xlabel('\omega [rad/s]')
-% ylabel('Body Torque [N-m]')
+    % plot RAO
+    figure
+    plot(w_scaled,RAO)
+    hold on
+    plot([w_min_deepwater,w_min_deepwater],[0 60],'--')
+    xlim([0 10])
+    ylim([0 60])
+    xlabel('scaled omega')
+    ylabel('RAO = WEC amplitude per unit wave amplitude')
+    legend('RAO','Min Frequency for Deep Water')
 
-B_scaled = B./(lambda^(4.5));
-new_K = 0.8580;
+    % plot scaled hydro coeffs
+    figure
+    plot(w_scaled,A_scaled)
+    xlabel('scaled omega')
+    hold on
+    plot(w_scaled,B_scaled)
+    xlabel('scaled omega')
+    legend('scaled added mass','scaled damping')
 
-K_scaled = new_K;%K./(lambda^4);
-B_pto_scaled = B_pto./(lambda^(4.5));
-K_pto_scaled = K_pto./(lambda^4);
-I_A_scaled = (I + A)./(lambda^5);
-A_scaled = A./(lambda^5);
-w_scaled = w.*sqrt(lambda);
-theta_mag_scaled = theta_mag.*(lambda/beta);
+    % plot powertrain torque at WEC
+    figure
+    plot(w_scaled,T_powertrain)
+    hold on
+    plot([w_min_deepwater,w_min_deepwater],[0 30],'--')
+    xlim([0 10])
+    ylim([0 30])
+    xlabel('Scaled \omega [rad/s]')
+    ylabel('Scaled Powertrain Torque on Flap [N-m]')
+    legend(['Torque for H=',num2str(H_scaled)],'Min Frequency for Deep Water')
+end
 
-plot(w_scaled,A_scaled)
-xlabel('scaled omega')
-ylabel('scaled added mass')
-plot(w_scaled,B_scaled)
-xlabel('scaled omega')
-ylabel('scaled damping')
-
-T_powertrain = theta_mag_scaled .* sqrt(K_pto_scaled.^2 + (B_pto_scaled.*w_scaled).^2);%./gear_ratios';
-
-figure
-plot(w_scaled,T_powertrain)
-xlim([0 7])
-ylim([0 30])
-xlabel('Scaled \omega [rad/s]')
-ylabel('Scaled Powertrain Torque on Flap [N-m]')
-legend
-
-% proto_motor_max = 4;        % [N-m]
-% excess_torque = proto_motor_max - F_powertrain;
-% figure(40)
-% plot(w_scaled,excess_torque)
-
-% mterm_scaled = I_A_scaled.*(w_scaled.^2).*theta_mag_scaled;
-% bterm_scaled = (B_scaled).*w_scaled.*theta_mag_scaled;%(B_scaled + B_pto_scaled).*w_scaled.*theta_mag_scaled;
-% kterm_scaled = (K_scaled).*theta_mag_scaled;%(K_scaled + K_pto_scaled).*theta_mag_scaled;
-% 
-% figure(57)
-% hold on
-% plot(w_scaled,mterm_scaled)
-% plot(w_scaled,bterm_scaled)
-% plot(w_scaled,kterm_scaled)
-% xlabel('scaled omega')
-% ylabel('force component magnitude')
-% legend('mass term','damping term','stiffness term')
-
-% T_body_scaled = mterm_scaled + bterm_scaled + kterm_scaled; %%% used as input 
-
-% length = 0.38;        % Length (in meters)
-% x_motion = length.*sin(theta_mag_scaled);
-% F_hydro = T_body_scaled./x_motion;
-% figure
-% plot(x_motion)
-% title('x motion')
-
-% T_motor_scaled = T_body_scaled;%./gear_ratios';
-% 
-% % to find actual motor torque it's sum of squares square rooted
-% % MDOCEAN DOES THIS!!!! HURRAH
-% figure(15)
-% plot(w_scaled,T_motor_scaled)
+end
