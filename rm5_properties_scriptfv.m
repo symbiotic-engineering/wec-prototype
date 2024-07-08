@@ -8,8 +8,8 @@ gravity = 9.81;           % Acceleration due to gravity (in m/s^2)
 density_water = 1000;     % kg/m^3
 
 % Geometry and dimensions of the object %%%% these dimensions need to be changed (7/8/24)
-height = 0.18;                  % Width (in meters)
-length = 0.38;                  % Length (in meters)
+height = 0.18;                  % Width (in meters) %%% 0.17 m
+length = 0.38;                  % Length (in meters) %%% 0.36 m
 t_sheet = 0.003175*2;           % Thickness of sheet (in meters) Polypropylene Sheet 2 sheets being used currently on each side
 t_foam = 0.02;                  % Thickness of foam (in meters)
 foam_area = t_foam*length;      %   NDG added this to 1d it
