@@ -1,5 +1,5 @@
 
-function [w_scaled, mI_A_scaled, B_scaled, K_scaled, gamma_scaled] = coeffs(dof,lambda,plot_on)
+function [w_scaled, A_scaled, B_scaled, K_scaled, gamma_scaled] = coeffs(dof,lambda,plot_on)
 % finding hydro coefficients after Froude scaling
 
 if nargin == 0
