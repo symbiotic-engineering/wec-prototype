@@ -18,14 +18,15 @@ I_g = 1/2 * m_rotor * r_rotor^2; % moment of inertia of generator/powertrain
 p = struct('Ig',I_g,...
            'H',H,...
            'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
-           'T_s',0.01,'T_d',0.1,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
+           ...%'T_s',0.05,'T_d',0.05,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
+           'T_s',0,'T_d',0,'b',0,...
            'dof',dof,'string_spring',RM5_spring_string);
 
 % set gear ratios and springs to sweep over
 if dof==5
-    gear_ratio = [17 18]; % gear ratio range
+    gear_ratio = 2 : 2 : 8; % gear ratio range
 elseif dof==3
-    pinion_radius = [0.01 0.02 0.08 0.09]; % m
+    pinion_radius = 0.010 : .005 : 0.025; % m
     gear_ratio = 1./pinion_radius; % 1/m
 end
 if dof == 3 || ~RM5_spring_string
@@ -75,25 +76,33 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
         inner_loop_label = 'Generator torque amplitude (Nm)';
     end
 
-    non_slack_combo = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
-    max_motor_torque    = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
+    non_slack_combo  = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
+    max_motor_torque = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
+    amplitude        = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
+    power            = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
     plot_timeseries = false;
     
     [spring_mesh, omega_mesh] = meshgrid(spring_size,omegas);
     
     p.Kh = K_scaled; % hydrodynamic stiffness
+    fig_start_number = numel(findobj('Type', 'figure'));
     for i = 1:length(gear_ratio)
     
         p.GR = gear_ratio(i); % gear ratio
         if p.dof == 5
-            GR_string = ['GR=' num2str(gear_ratio(i))];
+            GR_label = ['GR=' num2str(gear_ratio(i))];
         else
-            GR_string = ['Pinion radius = ' num2str(1000/gear_ratio(i)) ' mm'];
+            GR_label = ['Pinion radius = ' num2str(1000/gear_ratio(i)) ' mm'];
         end
 
         for j = 1:length(spring_size)
     
             p.T_spring = spring_size(j); % spring torque
+            if p.dof == 5 && p.string_spring
+                spring_label = [', spring = ' num2str(spring_size(j)) ' Nm'];
+            else
+                spring_label = '';
+            end
     
             for k = 1:length(omega_idxs)
                 omega_idx = omega_idxs(k);
@@ -128,20 +137,33 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
             each_test_power     = squeeze(power(i,j,:,:))';
 
             % titles
-            GR_spring_powered_title = [GR_string ', spring = ' num2str(spring_size(j)) ' Nm, ' powered_label];
-            non_slack_title = ['Acceptable combinations for preventing slackness for ' GR_spring_powered_title];
-            torque_title = ['Max Motor Torque for ' GR_spring_powered_title];
-            amp_title = ['WEC amplitude for ' GR_spring_powered_title];
-            power_title = ['Power for ' GR_spring_powered_title];
+            GR_spring_title = [GR_label spring_label];
             omegas_label = 'Frequency rad/s';
 
             % plots for this GR and spring, over each frequency and amplitude
+            subplot_number = i + (j-1)*(length(gear_ratio));
+            
+            figure(fig_start_number + 1)
+            subplot(length(spring_size),length(gear_ratio),subplot_number)
+            sgtitle(['Max Motor Torque (Nm), ' powered_label])
+            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_torque, GR_spring_title,[0 p.tau_max_Nm])
+
+            figure(fig_start_number + 2)
+            subplot(length(spring_size),length(gear_ratio),subplot_number)
+            sgtitle(['WEC amplitude, ' powered_label])
+            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_amplitude,GR_spring_title,[0 max(each_test_amplitude,[],'all')])
+            
+            figure(fig_start_number + 3)
+            subplot(length(spring_size),length(gear_ratio),subplot_number)
+            sgtitle(['WEC power (W), ' powered_label])
+            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_power,    GR_spring_title,[0 max(each_test_power,[],'all')])
+            
             if p.dof == 5 && p.string_spring 
-                plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_non_slack,non_slack_title,[0 1])
+                figure(fig_start_number + 4)
+                subplot(length(spring_size),length(gear_ratio),subplot_number)
+                sgtitle(['Acceptable combinations for preventing slackness, ' powered_label])
+                plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_non_slack,GR_spring_title,[0 1])
             end
-            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_torque,   torque_title,[0 p.tau_max_Nm])
-            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_amplitude,amp_title,[0 max(each_test_amplitude,[],'all')])
-            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_power,    power_title,[0 max(each_test_power,[],'all')])
 
             each_test_non_slack(isnan(each_test_non_slack)) = 0;
             each_test_torque(isnan(each_test_torque)) = 0;
@@ -157,14 +179,14 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     elseif p.dof == 5
         GR_label = 'GR (-)';
     end
+    figure
     plot_results(gear_ratio,GR_label,spring_size,'spring torque (Nm)',all_tests_ok,...
         ['Acceptable for all tests - ' powered_label],[0 1])
 
 end
 
 function plot_results(x,x_label,y,y_label,z,z_title,z_lim)
-    figure
-    imagesc(x, y, z)
+    h = imagesc(x, y, z);
     colorbar
     xlabel(x_label)
     ylabel(y_label)
@@ -173,6 +195,7 @@ function plot_results(x,x_label,y,y_label,z,z_title,z_lim)
         clim(z_lim)
     end
     draw_lines(x,y)
+    set(h, 'AlphaData', ~isnan(z))
 end
 
 function [non_slack, max_motor_torque, amplitude, power] = run_sim(odefun,p,plot_timeseries)
