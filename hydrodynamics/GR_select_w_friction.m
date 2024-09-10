@@ -3,55 +3,67 @@ clear;clc;close all
 % note: these dynamics are valid only for regular waves, since I haven't
 % implemented the convolution integral (memory effect).
 
-lambda = 50; plot_hydro = false;
-dof = 5; % RM5 or RM3
-
+plot_hydro = false;
 RM5_spring_string = false; % whether RM5 uses a string-spring PTO
 
-H = [0.02,0.06,0.10,0.136]; % wave heights - from Olivia slack message 8/1/24
-T_amp = .2 : .2 : .6; %1:4; % torque amplitude for radiation tests
+disp('Running RM5')
+run_wec(5,RM5_spring_string,plot_hydro) % RM5
+disp('Running RM3')
+run_wec(3,RM5_spring_string,plot_hydro) % RM3
 
-m_rotor = .354;
-r_rotor = .087/2;
-I_g = 1/2 * m_rotor * r_rotor^2; % moment of inertia of generator/powertrain
-% parameters
-p = struct('Ig',I_g,...
-           'H',H,...
-           'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
-           ...%'T_s',0.05,'T_d',0.05,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
-           'T_s',0,'T_d',0,'b',0,...
-           'dof',dof,'string_spring',RM5_spring_string);
+%%
 
-% set gear ratios and springs to sweep over
-if dof==5
-    gear_ratio = 1 : 2 : 9; % gear ratio range
-elseif dof==3
-    pinion_radius = 0.010 : .005 : 0.025; % m
-    gear_ratio = 1./pinion_radius; % 1/m
-end
-if dof == 3 || ~RM5_spring_string
-    spring_size = 0; % graph won't work if spring size is scalar, so add 1 for now
-elseif dof == 5 && RM5_spring_string
-    spring_size = 1:1:10;  % constant force spring size [N-m]
+function run_wec(dof,RM5_spring_string,plot_hydro)
+    [gear_ratio, spring_size, omega_test, lambda, T_amp, H, p] = get_numerical_inputs(dof, RM5_spring_string);
+    
+    powered = true;
+    inner_loop_qty = H;
+    run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p);
+    
+    powered = false;
+    inner_loop_qty = T_amp; 
+    run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p);
 end
 
-% set frequencies to sweep over
-% g = 9.8;
-% depth = 1.36; % Oregon tank depth [m]
-% w_min_deepwater = sqrt(2*g./depth);
-% w_max = 10; % rad/s
-% omega_idx_min = find(w_scaled > w_min_deepwater,1,'first');
-% omega_idx_max = find(w_scaled < w_max,          1,'last');
-% omega_idxs = omega_idx_min : omega_idx_max;
-omega_test = [7.07, 8.49, 9.83]; % override with actual test values
-
-powered = true;
-inner_loop_qty = H;
-run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p);
-
-powered = false;
-inner_loop_qty = T_amp; 
-run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p);
+function [gear_ratio, spring_size, omega_test, lambda, T_amp, H, p] = get_numerical_inputs(dof, RM5_spring_string)
+    lambda = 50;
+    H = [0.02,0.06,0.10,0.136]; % wave heights - from Olivia slack message 8/1/24
+    T_amp = .2 : .2 : .6; %1:4; % torque amplitude for radiation tests (Nm)
+    
+    m_rotor = .354;
+    r_rotor = .087/2;
+    I_g = 1/2 * m_rotor * r_rotor^2; % moment of inertia of generator/powertrain
+    % parameters
+    p = struct('Ig',I_g,...
+               'H',H,...
+               'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
+               ...%'T_s',0.05,'T_d',0.05,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
+               'T_s',0,'T_d',0,'b',0,...
+               'dof',dof,'string_spring',RM5_spring_string);
+    
+    % set gear ratios and springs to sweep over
+    if dof==5
+        gear_ratio = 1 : 2 : 9; % gear ratio range
+    elseif dof==3
+        pinion_radius = 0.010 : .005 : 0.025; % m
+        gear_ratio = 1./pinion_radius; % 1/m
+    end
+    if dof == 3 || ~RM5_spring_string
+        spring_size = 0;
+    elseif dof == 5 && RM5_spring_string
+        spring_size = 1:1:10;  % constant force spring size [N-m]
+    end
+    
+    % set frequencies to sweep over
+    % g = 9.8;
+    % depth = 1.36; % Oregon tank depth [m]
+    % w_min_deepwater = sqrt(2*g./depth);
+    % w_max = 10; % rad/s
+    % omega_idx_min = find(w_scaled > w_min_deepwater,1,'first');
+    % omega_idx_max = find(w_scaled < w_max,          1,'last');
+    % omega_idxs = omega_idx_min : omega_idx_max;
+    omega_test = [7.07, 8.49, 9.83]; % override with actual test values
+end
 
 function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p)
     [w_scaled, A_scaled, B_scaled, K_scaled, gamma_scaled] = coeffs(p.dof,lambda,plot_hydro);
@@ -75,6 +87,7 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
         powered_label = 'forced oscillation';
         inner_loop_label = 'Generator torque amplitude (Nm)';
     end
+    RM_label = [', RM' num2str(p.dof)];
 
     non_slack_combo  = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
     max_motor_torque = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
@@ -143,25 +156,29 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
             % plots for this GR and spring, over each frequency and amplitude
             subplot_number = i + (j-1)*(length(gear_ratio));
             
-            figure(fig_start_number + 1)
+            f1 = figure(fig_start_number + 1);
+            f1.WindowState = 'maximized';
             subplot(length(spring_size),length(gear_ratio),subplot_number)
-            sgtitle(['Max Motor Torque (Nm), ' powered_label])
+            sgtitle(['Max Motor Torque (Nm), ' powered_label RM_label])
             plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_torque, GR_spring_title,[0 p.tau_max_Nm])
 
-            figure(fig_start_number + 2)
+            f2 = figure(fig_start_number + 2);
+            f2.WindowState = 'maximized';
             subplot(length(spring_size),length(gear_ratio),subplot_number)
-            sgtitle(['WEC amplitude, ' powered_label])
+            sgtitle(['WEC amplitude, ' powered_label RM_label])
             plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_amplitude,GR_spring_title,[0 max(each_test_amplitude,[],'all')])
             
-            figure(fig_start_number + 3)
+            f3 = figure(fig_start_number + 3);
+            f3.WindowState = 'maximized';
             subplot(length(spring_size),length(gear_ratio),subplot_number)
-            sgtitle(['WEC power (W), ' powered_label])
+            sgtitle(['WEC power (W), ' powered_label RM_label])
             plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_power,    GR_spring_title,[0 max(each_test_power,[],'all')])
             
             if p.dof == 5 && p.string_spring 
-                figure(fig_start_number + 4)
+                f4 = figure(fig_start_number + 4);
+                f4.WindowState = 'maximized';
                 subplot(length(spring_size),length(gear_ratio),subplot_number)
-                sgtitle(['Acceptable combinations for preventing slackness, ' powered_label])
+                sgtitle(['Acceptable combinations for preventing slackness, ' powered_label RM_label])
                 plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_non_slack,GR_spring_title,[0 1])
             end
 
@@ -175,13 +192,15 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     
     % overall comparison of which GRs and springs work for every test
     if p.dof == 3
-        GR_label = 'Pinion radius (m)';
+        GR_label = 'Pinion radius (mm)';
+        x_GR = 1000./gear_ratio;
     elseif p.dof == 5
         GR_label = 'GR (-)';
+        x_GR = gear_ratio;
     end
     figure
-    plot_results(gear_ratio,GR_label,spring_size,'spring torque (Nm)',all_tests_ok,...
-        ['Acceptable for all tests - ' powered_label],[0 1])
+    plot_results(x_GR,GR_label,spring_size,'spring torque (Nm)',all_tests_ok,...
+        ['Acceptable for all tests - ' powered_label RM_label],[0 1])
 
 end
 
