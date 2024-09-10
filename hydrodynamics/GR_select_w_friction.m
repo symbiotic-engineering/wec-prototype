@@ -9,7 +9,7 @@ dof = 5; % RM5 or RM3
 RM5_spring_string = false; % whether RM5 uses a string-spring PTO
 
 H = [0.02,0.06,0.10,0.136]; % wave heights - from Olivia slack message 8/1/24
-T_amp = 1:4; % torque amplitude for radiation tests
+T_amp = .2 : .2 : .6; %1:4; % torque amplitude for radiation tests
 
 m_rotor = .354;
 r_rotor = .087/2;
@@ -24,7 +24,7 @@ p = struct('Ig',I_g,...
 
 % set gear ratios and springs to sweep over
 if dof==5
-    gear_ratio = 2 : 2 : 8; % gear ratio range
+    gear_ratio = 1 : 2 : 9; % gear ratio range
 elseif dof==3
     pinion_radius = 0.010 : .005 : 0.025; % m
     gear_ratio = 1./pinion_radius; % 1/m
@@ -206,7 +206,7 @@ function [non_slack, max_motor_torque, amplitude, power] = run_sim(odefun,p,plot
     tspan = [0 5*T];
     
     % ode solve
-    options = odeset('MaxStep',T/10);
+    options = odeset('MaxStep',T/20);
     
     %[y0,yp0] = decic(odefun, 0, y0, [1,1], yp0, [0,0]);
     sol = ode15i(odefun,tspan,y0,yp0,options);
