@@ -18,7 +18,7 @@ I_g = 1/2 * m_rotor * r_rotor^2; % moment of inertia of generator/powertrain
 p = struct('Ig',I_g,...
            'H',H,...
            'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
-           'T_s',0.1,'T_d',0.1,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
+           'T_s',0.01,'T_d',0.1,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
            'dof',dof,'string_spring',RM5_spring_string);
 
 % set gear ratios and springs to sweep over
@@ -29,7 +29,7 @@ elseif dof==3
     gear_ratio = 1./pinion_radius; % 1/m
 end
 if dof == 3 || ~RM5_spring_string
-    spring_size = [0 1]; % graph won't work if spring size is scalar, so add 1 for now
+    spring_size = 0; % graph won't work if spring size is scalar, so add 1 for now
 elseif dof == 5 && RM5_spring_string
     spring_size = 1:1:10;  % constant force spring size [N-m]
 end
@@ -158,7 +158,7 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
         GR_label = 'GR (-)';
     end
     plot_results(gear_ratio,GR_label,spring_size,'spring torque (Nm)',all_tests_ok,...
-        ['Acceptable for all tests -' powered_label],[0 1])
+        ['Acceptable for all tests - ' powered_label],[0 1])
 
 end
 
@@ -234,14 +234,26 @@ end
 
 function draw_lines(x,y)
     hold on
-    d_x = diff(x(1:2))/2;
-    d_y = diff(y(1:2))/2;
+    if length(x)>1
+        d_x = diff(x(1:2))/2;
+    else 
+        d_x = .5;
+    end
+    if length(y)>1
+        d_y = diff(y(1:2))/2;
+    else
+        d_y = .5;
+    end
+
     for xi = x
-        plot(d_x+[xi xi],[min(y)-d_y max(y)+d_y],'w','LineWidth',2)
+        plot(d_x+[xi xi],[min(y)-d_y max(y)+d_y],'w','LineWidth',2) % vert line
     end
+    xlim([min(x)-d_x, max(x)+d_x])
+
     for yi = y
-        plot([min(x)-d_x max(x)+d_x],d_y+[yi yi],'w','LineWidth',2)
+        plot([min(x)-d_x max(x)+d_x],d_y+[yi yi],'w','LineWidth',2) % horz line
     end
+    ylim([min(y)-d_y, max(y)+d_y])
 end
 
 % dynamics for forced oscillation radiation test
