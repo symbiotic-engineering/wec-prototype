@@ -4,9 +4,12 @@ clear;clc;close all
 % implemented the convolution integral (memory effect).
 
 lambda = 50; plot_hydro = false;
-dof = 5; % RM5 or RM3
+dof = 3;%5; % RM5 or RM3
 
-H = 0.01;
+RM5_spring_string = false; % whether RM5 uses a string-spring PTO
+
+H = [0.02,0.06,0.10,0.136]; % wave heights - from Olivia slack message 8/1/24
+T_amp = 1:4; % torque amplitude for radiation tests
 
 m_rotor = .354;
 r_rotor = .087/2;
@@ -16,13 +19,18 @@ p = struct('Ig',I_g,...
            'H',H,...
            'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
            'T_s',0.1,'T_d',0.1,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
-           'dof',dof);
+           'dof',dof,'string_spring',RM5_spring_string);
 
 % set gear ratios and springs to sweep over
-gear_ratio = [1 3 5]; % gear ratio range
-if dof == 3
+if dof==5
+    gear_ratio = [17 18]; % gear ratio range
+elseif dof==3
+    pinion_radius = [0.01 0.02 0.08 0.09]; % m
+    gear_ratio = 1./pinion_radius; % 1/m
+end
+if dof == 3 || ~RM5_spring_string
     spring_size = [0 1]; % graph won't work if spring size is scalar, so add 1 for now
-elseif dof == 5
+elseif dof == 5 && RM5_spring_string
     spring_size = 1:1:10;  % constant force spring size [N-m]
 end
 
@@ -37,17 +45,23 @@ end
 omega_test = [7.07, 8.49, 9.83]; % override with actual test values
 
 powered = true;
-run_sweep(powered,gear_ratio,spring_size,omega_test,lambda,plot_hydro,p);
-powered = false;
-run_sweep(powered,gear_ratio,spring_size,omega_test,lambda,plot_hydro,p);
+inner_loop_qty = H;
+run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p);
 
-function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,lambda,plot_hydro,p)
+powered = false;
+inner_loop_qty = T_amp; 
+run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p);
+
+function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p)
     [w_scaled, A_scaled, B_scaled, K_scaled, gamma_scaled] = coeffs(p.dof,lambda,plot_hydro);
     
     if p.dof == 5
         K_scaled = 0.8580; % override since K_scaled is somehow negative
         I_scaled = 0.0372; % override to match actual ptype moment of inertia
         mI_A_scaled = A_scaled + I_scaled;
+    elseif p.dof == 3
+        m_scaled = 1.208;
+        mI_A_scaled = A_scaled + m_scaled;
     end
     w_diff = abs(w_scaled - omega_test');
     [~,omega_idxs] = find(w_diff == min(w_diff,[],2));
@@ -55,12 +69,14 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,lambda,plot_hy
 
     if powered
         powered_title = 'powered';
+        inner_loop_name = 'H - regular wave height (m)';
     else
         powered_title = 'forced oscillation';
+        inner_loop_name = 'Generator torque amplitude (Nm)';
     end
 
-    is_acceptable_combo = zeros(length(gear_ratio),length(spring_size),length(omega_idxs));
-    max_motor_torque    = zeros(length(gear_ratio),length(spring_size),length(omega_idxs));
+    is_acceptable_combo = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
+    max_motor_torque    = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
     plot_timeseries = false;
     
     [spring_mesh, omega_mesh] = meshgrid(spring_size,omegas);
@@ -78,22 +94,24 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,lambda,plot_hy
                 omega_idx = omega_idxs(k);
                 p.Bh = B_scaled(1,omega_idx); % hydrodynamic damping
                 p.I = mI_A_scaled(1,omega_idx); % moment of inertia of flap
-                p.w = w_scaled(1,omega_idx); % wave frequency and 
-
-                if powered
-                    p.Fh = p.H/2 * gamma_scaled(1,omega_idx); % exciting force amplitude
-        
-                    % impedance matching
-                    p.Kp = p.I * p.w^2 - p.Kh;
-                    p.Bp = p.Bh;
-
-                    odefun = @(t,y,yp)dynamics_power(t,y,yp,p);
-                else
-                    p.T_gen_amplitude = 1;
-                    odefun = @(t,y,yp)dynamics_radiation(t,y,yp,p);
-                end
+                p.w = w_scaled(1,omega_idx); % wave frequency
                 
-                [is_acceptable_combo(i,j,k), max_motor_torque(i,j,k)] = run_sim(odefun,p,plot_timeseries);
+                for inner_idx = 1:length(inner_loop_qty)
+                    if powered
+                        % impedance matching
+                        p.Kp = p.I * p.w^2 - p.Kh;
+                        p.Bp = p.Bh;
+                        H = inner_loop_qty(inner_idx);
+                        p.Fh = H/2 * gamma_scaled(1,omega_idx); % exciting force amplitude
+                        odefun = @(t,y,yp)dynamics_power(t,y,yp,p);
+                    else
+                        p.T_gen_amplitude = inner_loop_qty(inner_idx);
+                        odefun = @(t,y,yp)dynamics_radiation(t,y,yp,p);
+                    end
+                
+                    [is_acceptable_combo(i,j,k,inner_idx), ...
+                        max_motor_torque(i,j,k,inner_idx)] = run_sim(odefun,p,plot_timeseries);
+                end
             end
         end
     
@@ -137,7 +155,7 @@ function [is_acceptable, max_motor_torque] = run_sim(odefun,p,plot_timeseries)
         [y,yp] = deval(sol,t);
         [err,P,T_gen,T_fric,T_string] = odefun(t,y,yp);
         
-        if p.dof == 5 && any(T_string <= 0)
+        if p.dof == 5 && p.string_spring && any(T_string <= 0)
             is_acceptable = false;
             max_motor_torque = 0;
             %fprintf('UNACCEPTABLE GR %f and Spring Force %f and Frequency %f\n',gear_ratio(i),spring_size(j),w_scaled(1,omega_idx))
@@ -233,7 +251,7 @@ function [err,P,T_gen,T_fric,T_string] = dynamics(T_exc,T_gen_cmd,t,y,yp,p)
     
     % string torque on drivetrain
     T_string = (T_inertia + T_hydro - T_exc) / GR_eff;
-    if p.dof == 5
+    if p.dof == 5 && p.string_spring
         T_string(T_string < 0) = 0;
     end
     
