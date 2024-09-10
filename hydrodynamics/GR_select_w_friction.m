@@ -4,7 +4,7 @@ clear;clc;close all
 % implemented the convolution integral (memory effect).
 
 lambda = 50; plot_hydro = false;
-dof = 3;%5; % RM5 or RM3
+dof = 5; % RM5 or RM3
 
 RM5_spring_string = false; % whether RM5 uses a string-spring PTO
 
@@ -68,14 +68,14 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     omegas = w_scaled(omega_idxs);
 
     if powered
-        powered_title = 'powered';
-        inner_loop_name = 'H - regular wave height (m)';
+        powered_label = 'powered';
+        inner_loop_label = 'H - regular wave height (m)';
     else
-        powered_title = 'forced oscillation';
-        inner_loop_name = 'Generator torque amplitude (Nm)';
+        powered_label = 'forced oscillation';
+        inner_loop_label = 'Generator torque amplitude (Nm)';
     end
 
-    is_acceptable_combo = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
+    non_slack_combo = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
     max_motor_torque    = zeros(length(gear_ratio),length(spring_size),length(omega_idxs),length(inner_loop_qty));
     plot_timeseries = false;
     
@@ -85,7 +85,12 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     for i = 1:length(gear_ratio)
     
         p.GR = gear_ratio(i); % gear ratio
-    
+        if p.dof == 5
+            GR_string = ['GR=' num2str(gear_ratio(i))];
+        else
+            GR_string = ['Pinion radius = ' num2str(1000/gear_ratio(i)) ' mm'];
+        end
+
         for j = 1:length(spring_size)
     
             p.T_spring = spring_size(j); % spring torque
@@ -109,36 +114,68 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
                         odefun = @(t,y,yp)dynamics_radiation(t,y,yp,p);
                     end
                 
-                    [is_acceptable_combo(i,j,k,inner_idx), ...
-                        max_motor_torque(i,j,k,inner_idx)] = run_sim(odefun,p,plot_timeseries);
+                    [non_slack_combo(i,j,k,inner_idx), ...
+                        max_motor_torque(i,j,k,inner_idx),...
+                        amplitude(i,j,k,inner_idx),...
+                        power(i,j,k,inner_idx)   ] = run_sim(odefun,p,plot_timeseries);
                 end
             end
-        end
-    
-        acceptable = squeeze(is_acceptable_combo(i,:,:))';
 
-        acceptable_title = ['Acceptable combinations for preventing slackness for GR=' num2str(gear_ratio(i)),', ' powered_title];
-        plot_results(spring_size,omegas,acceptable,acceptable_title,[0 1])
-    
-        torque = squeeze(max_motor_torque(i,:,:))';
-        torque_title = ['Max Motor Torque for GR=' num2str(gear_ratio(i)),', ' powered_title];
-        plot_results(spring_size,omegas,torque,torque_title,[0 p.tau_max_Nm])
+            % results for this GR and spring, over each frequency and amplitude
+            each_test_non_slack = squeeze(non_slack_combo(i,j,:,:))'; 
+            each_test_torque    = squeeze(max_motor_torque(i,j,:,:))';
+            each_test_amplitude = squeeze(amplitude(i,j,:,:))';
+            each_test_power     = squeeze(power(i,j,:,:))';
+
+            % titles
+            GR_spring_powered_title = [GR_string ', spring = ' num2str(spring_size(j)) ' Nm, ' powered_label];
+            non_slack_title = ['Acceptable combinations for preventing slackness for ' GR_spring_powered_title];
+            torque_title = ['Max Motor Torque for ' GR_spring_powered_title];
+            amp_title = ['WEC amplitude for ' GR_spring_powered_title];
+            power_title = ['Power for ' GR_spring_powered_title];
+            omegas_label = 'Frequency rad/s';
+
+            % plots for this GR and spring, over each frequency and amplitude
+            if p.dof == 5 && p.string_spring 
+                plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_non_slack,non_slack_title,[0 1])
+            end
+            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_torque,   torque_title,[0 p.tau_max_Nm])
+            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_amplitude,amp_title,[0 max(each_test_amplitude,[],'all')])
+            plot_results(omegas,omegas_label, inner_loop_qty,inner_loop_label, each_test_power,    power_title,[0 max(each_test_power,[],'all')])
+
+            each_test_non_slack(isnan(each_test_non_slack)) = 0;
+            each_test_torque(isnan(each_test_torque)) = 0;
+            all_tests_ok = all(each_test_non_slack & each_test_torque<=p.tau_max_Nm,'all');
+
+        end  
         
     end
+    
+    % overall comparison of which GRs and springs work for every test
+    if p.dof == 3
+        GR_label = 'Pinion radius (m)';
+    elseif p.dof == 5
+        GR_label = 'GR (-)';
+    end
+    plot_results(gear_ratio,GR_label,spring_size,'spring torque (Nm)',all_tests_ok,...
+        ['Acceptable for all tests -' powered_label],[0 1])
+
 end
 
-function plot_results(x,y,z,my_title,z_lim)
+function plot_results(x,x_label,y,y_label,z,z_title,z_lim)
     figure
     imagesc(x, y, z)
     colorbar
-    xlabel('spring torque Nm')
-    ylabel('frequency rad/s')
-    title(my_title)
-    clim(z_lim)
+    xlabel(x_label)
+    ylabel(y_label)
+    title(z_title)
+    if z_lim(1) ~= z_lim(2) && all(~isnan(z_lim))
+        clim(z_lim)
+    end
     draw_lines(x,y)
 end
 
-function [is_acceptable, max_motor_torque] = run_sim(odefun,p,plot_timeseries)
+function [non_slack, max_motor_torque, amplitude, power] = run_sim(odefun,p,plot_timeseries)
     % ode inputs
     T = 2*pi/p.w;
     y0 = [0;0];
@@ -156,11 +193,11 @@ function [is_acceptable, max_motor_torque] = run_sim(odefun,p,plot_timeseries)
         [err,P,T_gen,T_fric,T_string] = odefun(t,y,yp);
         
         if p.dof == 5 && p.string_spring && any(T_string <= 0)
-            is_acceptable = false;
-            max_motor_torque = 0;
+            non_slack = false;
+            max_motor_torque = NaN;
             %fprintf('UNACCEPTABLE GR %f and Spring Force %f and Frequency %f\n',gear_ratio(i),spring_size(j),w_scaled(1,omega_idx))
         else
-            is_acceptable = true;
+            non_slack = true;
             max_motor_torque = max(abs(T_gen));
             %fprintf('  ACCEPTABLE GR %f and Spring Force %f and Frequency %f\n',gear_ratio(i),spring_size(j),w_scaled(1,omega_idx))
 
@@ -179,26 +216,31 @@ function [is_acceptable, max_motor_torque] = run_sim(odefun,p,plot_timeseries)
                 legend('err_T (Nm)','err_v (m/s)')
             end
         end
+
+        power = max(P);
+        amplitude = max(y(1,:)) - min(y(1,:));
     catch exception
         if strcmp(exception.identifier, 'MATLAB:deval:SolOutsideInterval')
             %fprintf('SIM FAILED   GR %f and Spring Force %f and Frequency %f\n',gear_ratio(i),spring_size(j),w_scaled(1,omega_idx))
-            is_acceptable = NaN;
+            non_slack = NaN;
             max_motor_torque = NaN;
+            power = NaN;
+            amplitude = NaN;
         else
             rethrow(exception);
         end
     end
 end
 
-function draw_lines(spring_size,omegas)
+function draw_lines(x,y)
     hold on
-    d_sp = diff(spring_size(1:2))/2;
-    d_w = diff(omegas(1:2))/2;
-    for sp = spring_size
-        plot(d_sp+[sp sp],[min(omegas)-d_w max(omegas)+d_w],'w','LineWidth',2)
+    d_x = diff(x(1:2))/2;
+    d_y = diff(y(1:2))/2;
+    for xi = x
+        plot(d_x+[xi xi],[min(y)-d_y max(y)+d_y],'w','LineWidth',2)
     end
-    for w = omegas
-        plot([min(spring_size)-d_sp max(spring_size)+d_sp],d_w+[w w],'w','LineWidth',2)
+    for yi = y
+        plot([min(x)-d_x max(x)+d_x],d_y+[yi yi],'w','LineWidth',2)
     end
 end
 
