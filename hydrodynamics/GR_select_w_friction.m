@@ -70,7 +70,8 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     
     if p.dof == 5
         K_scaled = 0.8580; % override since K_scaled is somehow negative
-        I_scaled = 0.0372; % override to match actual ptype moment of inertia
+        I_rack = 0.05846 * .75; % rack, multiplied down assuming lightening
+        I_scaled = 0.0372 + I_rack; % override to match actual ptype moment of inertia
         mI_A_scaled = A_scaled + I_scaled;
     elseif p.dof == 3
         m_scaled = 1.208;
