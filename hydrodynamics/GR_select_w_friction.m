@@ -6,8 +6,8 @@ clear;clc;close all
 plot_hydro = false;
 RM5_spring_string = false; % whether RM5 uses a string-spring PTO
 
-disp('Running RM5')
-run_wec(5,RM5_spring_string,plot_hydro) % RM5
+%disp('Running RM5')
+%run_wec(5,RM5_spring_string,plot_hydro) % RM5
 disp('Running RM3')
 run_wec(3,RM5_spring_string,plot_hydro) % RM3
 
@@ -62,7 +62,7 @@ function [gear_ratio, spring_size, omega_test, lambda, T_amp, H, p] = get_numeri
     % omega_idx_min = find(w_scaled > w_min_deepwater,1,'first');
     % omega_idx_max = find(w_scaled < w_max,          1,'last');
     % omega_idxs = omega_idx_min : omega_idx_max;
-    omega_test = [7.07, 8.49, 9.83]; % override with actual test values
+    omega_test = (2*pi*sqrt(50))./[9.83, 8.49, 7.07]; % override with actual test values
 end
 
 function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty,lambda,plot_hydro,p)

@@ -26,7 +26,7 @@ ezButton ESTOP(5);
 
 volatile float theta = 0;
 
-const float voltage_threshold = 35.2;
+const float voltage_threshold = 10;
 /* 
 NO FAULTS: fault = 0
 SOFT_FAULT: fault = 1
@@ -221,6 +221,7 @@ void setup() {
   //Initialize serial monitor
   //Note: make sure this matches the baud rate of your serial monitor
   Serial.begin(9600);
+  Serial.println("Serial Begin");
 
   //Intialize Timer Interrupt
   //Timer is set to interrupt every 10ms creating a polling frequency of 100Hz
@@ -231,7 +232,7 @@ void setup() {
     Serial.println("Can't set ITimer0. Select another freq. or timer");
 
   ADVANCE.setDebounceTime(50);
-  
+  Serial.println("timer init");
 
   // Set up STM output pins
   pinMode(HIGH_SIDE_RELAY_PIN, OUTPUT);
@@ -256,6 +257,7 @@ void setup() {
 // Interrupt Handler
 //----------------------------
 void timer_ISR_state_machine(){
+  // Serial.println("hello world")
   //Read from VESC
   current_vesc = vesc_read();
   //Set appropriate flags for state transisitons
@@ -264,6 +266,7 @@ void timer_ISR_state_machine(){
   theta = 2 * 3.14159 * (current_vesc.tach/126);
   // Serial.print("Angle = ");
   // Serial.println(degrees(theta));
+  Serial.println(batt_voltage);
   switch(current_state){
     case ROOT: // (ROOT->PRECHARGE) advance && !faults
       batt_voltage = 0;
@@ -409,6 +412,9 @@ void flag_set(vesc_reading temp_vesc){
 
 void loop() {
   // put your main code here, to run repeatedly:
+  Serial.println("hello world");
+  delay(1000);
+
   // current_vesc = vesc_read();
   // flag_set(current_vesc);
 
@@ -417,4 +423,8 @@ void loop() {
   float wave_gauge_val = wave_gauge_read();
   float torque_val = torque_sensor_read();  
 
+  // Serial.println("hello world");
+  // delay(1000);
+
 }
+
