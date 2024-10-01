@@ -48,8 +48,9 @@ gamma_scaled = gamma./(lambda^expo_G);
 if plot_on
     % full scale transfer function
     numerator = gamma;
-    denominator = (-1.*(m_I + A).*w.^2 + K + K_pto).^2 + ((B + B_pto).*w).^2;
-    RAO = numerator./sqrt(denominator); % WEC amplitude per unit wave amplitude full scale
+    denominator = (-1*w.^2 .*(m_I + A)) + (w.*(B+B_pto)) + (K + K_pto);
+    %denominator = (-1.*(m_I + A).*w.^2 + K + K_pto).^2 + ((B + B_pto).*w).^2;
+    RAO = numerator./(denominator); % WEC amplitude per unit wave amplitude full scale
     WEC_amp_mag_over_H = RAO * 1/2; % WEC amplitude per unit wave height full scale
     WEC_amp_mag_over_H_scaled = WEC_amp_mag_over_H; % stays constant over Froude scaling
 
@@ -63,11 +64,11 @@ if plot_on
 
     % plot RAO
     figure
-    plot(w_scaled,RAO)
+    plot(w,RAO)
     hold on
     plot([w_min_deepwater,w_min_deepwater],[0 60],'--')
     xlim([0 10])
-    ylim([0 60])
+    ylim([-1 1])
     xlabel('scaled omega')
     ylabel('RAO = WEC amplitude per unit wave amplitude')
     legend('RAO','Min Frequency for Deep Water')

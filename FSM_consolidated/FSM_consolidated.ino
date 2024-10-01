@@ -62,6 +62,7 @@ const int battvoltsensorPin = A4; //= pin number of the battery voltage sensor
 const int battcurrentsensorPin = A5; //= pin number of the battery current sensor
 const int wavegaugePin = A3; //= pin number of the wave gauge
 const int torquesensorPin = A1; //=pin number of the torque sensor
+//const int 5_5voltPin = ????; //= pin number of 5.5V on microcontroller
 #define HIGH_SIDE_RELAY_PIN   23
 #define PRE_LOW_DIS_RELAY_PIN 25
 #define VESC_POWER_PIN 24
@@ -222,6 +223,7 @@ void setup() {
   //Note: make sure this matches the baud rate of your serial monitor
   Serial.begin(9600);
   Serial.println("Serial Begin");
+  //Serial.dtr(false);
 
   //Intialize Timer Interrupt
   //Timer is set to interrupt every 10ms creating a polling frequency of 100Hz
@@ -245,6 +247,9 @@ void setup() {
   pinMode(wavegaugePin, INPUT);
   pinMode(torquesensorPin, INPUT);
 
+  // Force FSM to start in ROOT state at power up
+  current_state = ROOT;
+  Serial.println("State Machine initialized to ROOT.");
 
   /** Setup UART port (Serial3 on STM32 Feather) */
   Serial3.begin(115200);
@@ -412,6 +417,7 @@ void flag_set(vesc_reading temp_vesc){
 
 void loop() {
   // put your main code here, to run repeatedly:
+
   Serial.println("hello world");
   delay(1000);
 

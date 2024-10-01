@@ -6,10 +6,10 @@ clear;clc;close all
 plot_hydro = false;
 RM5_spring_string = false; % whether RM5 uses a string-spring PTO
 
-%disp('Running RM5')
-%run_wec(5,RM5_spring_string,plot_hydro) % RM5
-disp('Running RM3')
-run_wec(3,RM5_spring_string,plot_hydro) % RM3
+disp('Running RM5')
+run_wec(5,RM5_spring_string,plot_hydro) % RM5
+%disp('Running RM3')
+%run_wec(3,RM5_spring_string,plot_hydro) % RM3
 
 %%
 
@@ -38,7 +38,7 @@ function [gear_ratio, spring_size, omega_test, lambda, T_amp, H, p] = get_numeri
                'H',H,...
                'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
                ...%'T_s',0.05,'T_d',0.05,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
-               'T_s',0,'T_d',0,'b',0,...
+               'T_s',0.005,'T_d',0.005,'b',0.1,...
                'dof',dof,'string_spring',RM5_spring_string);
     
     % set gear ratios and springs to sweep over
