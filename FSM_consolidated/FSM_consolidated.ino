@@ -271,7 +271,7 @@ void timer_ISR_state_machine(){
   theta = 2 * 3.14159 * (current_vesc.tach/126);
   // Serial.print("Angle = ");
   // Serial.println(degrees(theta));
-  Serial.println(batt_voltage);
+  Serial.println(batt_voltage_read());
   switch(current_state){
     case ROOT: // (ROOT->PRECHARGE) advance && !faults
       batt_voltage = 0;
