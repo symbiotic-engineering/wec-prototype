@@ -6,10 +6,10 @@ clear;clc;close all
 plot_hydro = false;
 RM5_spring_string = false; % whether RM5 uses a string-spring PTO
 
-disp('Running RM5')
-run_wec(5,RM5_spring_string,plot_hydro) % RM5
-%disp('Running RM3')
-%run_wec(3,RM5_spring_string,plot_hydro) % RM3
+%disp('Running RM5')
+%run_wec(5,RM5_spring_string,plot_hydro) % RM5
+disp('Running RM3')
+run_wec(3,RM5_spring_string,plot_hydro) % RM3
 
 %%
 
@@ -38,14 +38,14 @@ function [gear_ratio, spring_size, omega_test, lambda, T_amp, H, p] = get_numeri
                'H',H,...
                'tau_max_Nm',4, 'motor_max_rpm',3000,... % motor max torque and speed
                ...%'T_s',0.05,'T_d',0.05,'b',.1,...  % static and dynamic friction torques and viscous friction coefficient
-               'T_s',0.005,'T_d',0.005,'b',0.1,...
+               'T_s',0.05,'T_d',0.05,'b',0.1,...
                'dof',dof,'string_spring',RM5_spring_string);
     
     % set gear ratios and springs to sweep over
     if dof==5
         gear_ratio = 1 : 2 : 9; % gear ratio range
     elseif dof==3
-        pinion_radius = 0.010 : .005 : 0.025; % m
+        pinion_radius = 0.025 : .005 : 0.040; % m
         gear_ratio = 1./pinion_radius; % 1/m
     end
     if dof == 3 || ~RM5_spring_string
@@ -79,7 +79,9 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     end
     w_diff = abs(w_scaled - omega_test');
     [~,omega_idxs] = find(w_diff == min(w_diff,[],2));
+    disp(omega_idxs)
     omegas = w_scaled(omega_idxs);
+    disp(omegas)
 
     if powered
         powered_label = 'powered';
@@ -100,6 +102,7 @@ function [] = run_sweep(powered,gear_ratio,spring_size,omega_test,inner_loop_qty
     
     p.Kh = K_scaled; % hydrodynamic stiffness
     fig_start_number = numel(findobj('Type', 'figure'));
+
     for i = 1:length(gear_ratio)
     
         p.GR = gear_ratio(i); % gear ratio
@@ -276,6 +279,7 @@ function [non_slack, max_motor_torque, amplitude, power] = run_sim(odefun,p,plot
 end
 
 function draw_lines(x,y)
+    disp(x)
     hold on
     if length(x)>1
         d_x = diff(x(1:2))/2;

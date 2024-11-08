@@ -9,13 +9,22 @@ if nargin == 0
     close all
 end
 
-[A,B,K,gamma,~,g,w] = extractData(dof);
+if dof == 5
+    [A,B,K,gamma,~,g,w] = extractData(dof);
+else
+    [~,~,~,gamma,~,g,~] = extractData(dof);
+    % hydro coeff values input from Capytaine
+    w = (2*pi)./[9.83, 8.49, 7.07];
+    A = [857437.6026108302, 808114.8298478591, 725455.9207965522];
+    B = [172961.9916724807, 172961.9916724807, 284789.9780544209];
+    K = 1609195.9160255592;
+end
 
 % full scale parameters
 if dof == 5
     m_I = 1850000;                  % moment of inertia [kg-m^2]
 elseif dof == 3
-    m_I = 725833;                   % RM3 float mass [kg]
+    m_I = 221448.97926957233; % 725833;             % RM3 float mass [kg]
 end
 
 % full scale reactive control
