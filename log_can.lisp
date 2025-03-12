@@ -19,13 +19,12 @@
 ; default values will be used if they are left out.
 (def loglist '(
         ("v_in" "V" "Input Voltage"     (get-vin))
-        ("roll"                         (ix (get-imu-rpy) 0))
-        ("pitch"                        (ix (get-imu-rpy) 1))
-        ("yaw"                          (ix (get-imu-rpy) 2))
-        ("kmh_vesc" "km/h" "Speed VESC" (* (get-speed) 3.6))
         ("Motor Current"                (get-current))
         ("Current Direction"            (get-current-dir))
-        ("rpm"                          (get-rpm))
+        ("Current In"                   (get-current-in))
+        ("Motor RPM"                    (get-rpm))
+        ("FOC d-axis current"           (get-id optFilter))
+        ("FOC q-axis current"           (get-iq optFilter))
         ("Position"                     (get-pos))
         ("Fault"                        (get-fault))
 ))
