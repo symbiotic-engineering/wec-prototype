@@ -4,7 +4,7 @@ VescUart UART;
 
 #define gearRatio 26
 #define k_b 11.5
-#define r_eff 0.0175
+#define r_eff 0.026
 #define I_thresh 13
 
 // Variables for current calculation 
@@ -213,15 +213,15 @@ void set_OscCurrent(String wec_type, float frequency, float amplitude) {
 }
 
 
-  float calcCurrent(float w_motor, float thetha, String wec_type) {
+  float calcCurrent(float w_motor, float theta, String wec_type) {
 
     if(wec_type == "PA"){
      v = w_motor * r_eff;
-     x = thetha * r_eff;
+     x = theta * r_eff;
     }
     else if(wec_type == "OS") {
      v = w_motor * gearRatio;
-     x = thetha * gearRatio; 
+     x = theta * gearRatio; 
      }
 
      float F_desired = kp*x + bp*v;
