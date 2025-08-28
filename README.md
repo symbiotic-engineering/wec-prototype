@@ -14,6 +14,7 @@ The system allows real-time interaction with prototypes, including selecting WEC
 
 ## 3. Software
 - **Python** – Raspberry Pi GUI and control code (`wec_rpi_gui.py`)  
+- **MATLAB** – Hydrodynamic analyses (`PA_buoyancy.m`) 
 - **Arduino** – Motor control code (`wec_arduino_motorcontrol.ino`)  
 - **VESC logging script** (`log_can.lisp`) – Captures motor data points  
 
@@ -29,8 +30,9 @@ WEC-Prototype/
 └── VESC/
 └── log_can.lisp # Logs motor data points during testing
 ├── hydrodynamics/
-  └── oswec.out
-  └── rm3.out
+  └── PA_buoyancy.m # Evaluates the hydrodynamic repsonse of the PA
+├── gear_ratio_appendix/
+  └── Files required to simulate both the PA and OSWEC to estimate required GR
 ```
 ## 5. Code Setup Instructions
 
