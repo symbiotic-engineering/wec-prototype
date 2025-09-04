@@ -19,7 +19,7 @@ for i = 1:1:numRow
     for j = 1:1:numCol
         m_PA(i,j) = (3/4)*l(i)*rho_w*pi*(r(j)^2);          % mass of PA [kg] (if draft is 3/4 of length)
         %A = 2*pi*r(j)*(l(i)/2) + 2*pi*r(j)^2;             % wetted surface area [m^2] (why was i using wetted surface area????? it works a lot better...)
-        A = pi*r(i)^2;                                     % waterplane area
+        A = pi*r(j)^2;                                     % waterplane area
         K(i,j) = rho_w*g.*A;                               % PA stiffness [kg/s^2]
         A_33(i,j) = rho_w * (pi * r(j)^2) * (3*l(i)/4);    % added mass approx in heave (was originally l/2 for some reason?
         if m_PA(i,j) >= m_rb
@@ -42,16 +42,16 @@ l_max = ones(size(r_vec)).*0.0889;         % maximum length [m]
 
 figure(1)
 hold on
-contourf(l,2.*r,m_float)
-rectangle('Position', [l_vec(1),2*r_vec(1),l_max(1)-l_vec(1),d_max(1)-2*r_vec(1)], ...
+contourf(2.*r,l,m_float)
+rectangle('Position', [2*r_vec(1),l_vec(1),d_max(1)-2*r_vec(1),l_max(1)-l_vec(1)], ...
                 'FaceColor', [.0, .62, 0.451, 0.5], ...
                 'EdgeColor', [.0, .62, 0.451, 0.5]);
-plot(l_vec,d_max,'Color','#009E73','LineWidth',5)
-plot(l_max,2.*r_vec,'Color','#009E73','LineWidth',5)
-plot(0.0889,0.2921,"p",'MarkerEdgeColor','#000000','MarkerFaceColor','#009E73','MarkerSize',20,'LineWidth',2)
+plot(d_max,l_vec,'Color','#009E73','LineWidth',5)
+plot(2.*r_vec,l_max,'Color','#009E73','LineWidth',5)
+plot(0.2921,0.0889,"p",'MarkerEdgeColor','#000000','MarkerFaceColor','#009E73','MarkerSize',20,'LineWidth',2)
 legend('','Achievable Range','','Chosen Dims','Location','northoutside')
-xlabel('Length [m]','FontSize',16)
-ylabel('Diameter [m]','FontSize',16)
+xlabel('Diameter [m]','FontSize',16)
+ylabel('Length [m]','FontSize',16)
 ax = gca; 
 ax.FontSize = 16;
 c = colorbar;
@@ -62,16 +62,16 @@ hold off
 T = (2*pi)./w;                          % natural period
 figure(2)
 hold on
-contourf(l,2.*r,T)
-rectangle('Position', [l_vec(1),2*r_vec(1),l_max(1)-l_vec(1),d_max(1)-2*r_vec(1)], ...
+contourf(2.*r,l,T)
+rectangle('Position', [2*r_vec(1),l_vec(1),d_max(1)-2*r_vec(1),l_max(1)-l_vec(1)], ...
                 'FaceColor', [.0, .62, 0.451, 0.5], ...
                 'EdgeColor', [.0, .62, 0.451, 0.5]);
-plot(l_vec,d_max,'Color','#009E73','LineWidth',5)
-plot(l_max,2.*r_vec,'Color','#009E73','LineWidth',5)
-plot(0.0889,0.2921,"p",'MarkerEdgeColor','#000000','MarkerFaceColor','#009E73','MarkerSize',20,'LineWidth',2)
+plot(d_max,l_vec,'Color','#009E73','LineWidth',5)
+plot(2.*r_vec,l_max,'Color','#009E73','LineWidth',5)
+plot(0.2921,0.0889,"p",'MarkerEdgeColor','#000000','MarkerFaceColor','#009E73','MarkerSize',20,'LineWidth',2)
 legend('','Achievable Range','','Chosen Dims','Location','northoutside')
-xlabel('Length [m]','FontSize',16)
-ylabel('Diameter [m]','FontSize',16)
+xlabel('Diameter [m]','FontSize',16)
+ylabel('Length [m]','FontSize',16)
 ax = gca; 
 ax.FontSize = 16;
 c = colorbar;
