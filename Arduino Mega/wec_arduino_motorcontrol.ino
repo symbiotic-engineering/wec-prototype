@@ -1,0 +1,213 @@
+#include <VescUart.h>
+
+VescUart UART;
+
+#define gearRatio 26
+#define k_b 11.5
+#define r_eff 0.026
+#define I_thresh 30
+
+// Variables for current calculation 
+float v;     //velocity [m/s]
+float x;     //amplitude [m]
+float bp;  //PTO damping 
+float kp;  //PTO stiffness
+float M;   //mass [kg] for point absorber, mass moment of inertia [kg-m^2] for osc flap
+float K;    //stiffness [N/m]
+float A;   //added mass [kg[]
+float B;   //radiation damping [kg/s]
+volatile float theta = 0; 
+float c_speed;
+
+// Variables for Rpi UI info
+String message;  //message from Rpi
+float frequency;   //frequency value
+String wec_type; //wec type (PA ore  OS)
+float amp;           //amplitude [m]
+
+int freqIndex;     //index of frequency in message
+int ampIndex;    //index of amplitude in message
+int typeIndex;    //index of wec type in message
+
+// Variables for Forced Osc Test rpm calculation
+float v_set = 14.64;        //velocity [m/s]
+float rpm;                //rpm [revs/minute]
+float offTime;          //amount of time motor should be off [ms]
+float onTime;          //amount of time motor should be on [ms]
+float w_motor;        //angular velocity of motor [rad/sec]
+
+//Test variables
+float current = 2.10;
+bool oscTest;          //bool value for OSC test
+bool motorControl; //bool value for motor control
+
+void setup() {
+  Serial.begin(115200);
+  Serial1.begin(115200);
+  while (!Serial1) {;}
+
+  //Set UART comm to VESC to Serial1
+  UART.setSerialPort(&Serial1);
+  oscTest = 0;
+  motorControl = 0;
+}
+
+ void parse_message(String message) {
+
+  
+  //Get the index of frequency and type
+  freqIndex = message.indexOf("Frequency:");
+  typeIndex = message.indexOf("Type:");
+  ampIndex = message.indexOf("Amp:");
+
+  //If these imdexes exist then start parsing 
+  if(freqIndex != -1 && typeIndex != -1){
+    //go past the 10 characters in frequency and get the frequency value
+    //stop at the delimiter "|"
+    //convert the frequency from a string to int  
+    frequency = message.substring(freqIndex + 10, message.indexOf("|", freqIndex)).toInt();
+    
+    //Obtain wec_type from the rest of the message 
+    wec_type = message.substring(typeIndex + 5, message.indexOf("|", typeIndex));
+    }
+
+   if( ampIndex != -1) {
+    //Obtain the amp information 
+    amp = message.substring(ampIndex + 4).toFloat();
+    }
+    //Serial.println(amp);
+  }
+
+
+// note: the following helper function only exists still bc it helps for 
+// specifying that we are running a forced osc test
+ void calcOscTestRPM(float amp) {
+  //calculate time to spin
+  onTime = amp/v_set;
+  //omega 
+  w_motor = v_set/r_eff;
+  //time to stay off
+  offTime = (1/frequency) * 1000;
+  //calculating rpm 
+  rpm = w_motor * 9.55;
+ }
+
+void set_OscCurrent(String wec_type, double frequency, double amplitude) {
+    float multiplier = 1.0;  // Default multiplier
+    float time_sec = micros() / 1.0e6;  // Convert microseconds to seconds
+
+    if (wec_type == "PA") {
+        multiplier = 800.0;
+    } 
+    else if (wec_type == "OS") {
+        multiplier = 50.0;
+    }
+
+    if (fabs(frequency == 0.832));
+        frequency = 0.8;
+    if (fabs(frequency == 0.719));
+        frequency = 0.75;
+    if (amplitude == 0.02);
+        amplitude = 0.04;
+
+    float current = multiplier * amplitude * sin(2 * PI * frequency * time_sec);
+
+    // Avoid very small floating-point errors affecting output
+    if (fabs(current) < 0.001) {
+        current = 0.0;
+    }
+
+    UART.setCurrent(current);
+}
+
+void set_parameters(float frequency, String wec_type) {
+    if (wec_type == "PA") {
+        M = 5.3; K = 643.7;
+        if (frequency == 1)       { A = 5.36;  B = 10.47; }
+        else if (frequency == 0.832) { A = 5.65;  B = 9.33; }
+        else if (frequency == 0.719) { A = 6.13;  B = 8.081; }
+    } 
+    else if (wec_type == "OS") {
+        M = 0.0082; K = 1636.98;
+        if (frequency == 1)       { A = 0.0167; B = 7.35; }
+        else if (frequency == 0.832) { A = 0.01676; B = 2.862; }
+        else if (frequency == 0.719) { A = 0.0167; B = 1.253; }
+    }
+    bp = B;
+    kp = sqrt(K / (M + A));
+}
+
+void calcCurrent(float w_motor, float theta, String wec_type) {
+
+  if(wec_type == "PA"){
+    v = w_motor * r_eff;
+    x = theta * r_eff;
+  }
+  else if(wec_type == "OS") {
+    v = w_motor * gearRatio;
+    x = theta * gearRatio; 
+    }
+  
+  float F_desired = kp*x + bp*v;
+  float I_desired = F_desired * r_eff * k_b;
+
+  if(wec_type == "OS") {
+    I_desired = F_desired * gearRatio * k_b;
+  }
+
+    if(abs(I_desired) > I_thresh) {
+    I_desired = 0.0;
+    }
+
+  UART.setCurrent(I_desired);
+  }
+
+void loop() {
+  //Look for serial message from Rpi
+  if(Serial.available() > 0) {
+          message = Serial.readStringUntil('\n');
+  }
+
+  //Stop the motor if the message is "Stop"                                  
+  if(UART.getVescValues() && message == "Stop") {
+         oscTest = 0;
+         motorControl = 0;
+         ampIndex = -1;
+         freqIndex = -1;
+         typeIndex = -1;
+         UART.setRPM(0.00);
+         UART.setCurrent(0.00);
+ }
+
+  //Else parse the message
+  else if(message != "Stop" && message){
+         parse_message(message);
+  }
+
+  //If amplitude is part of the message it is a forced oscillation test
+  if(ampIndex != -1) {
+        //calculate RPM
+        calcOscTestRPM(amp);
+        //set OscTest to true
+        oscTest = 1; 
+   }
+
+  else if(freqIndex != -1 && typeIndex != -1 && ampIndex == -1) {
+        motorControl = 1;
+   }
+
+   if(oscTest){
+    set_OscCurrent(wec_type, frequency, amp);
+    }
+
+  if(motorControl) {
+
+      UART.getVescValues();
+      theta = 2 * 3.14159 * (UART.data.tachometer/126);
+      c_speed = (UART.data.rpm/21)*(3.14159265359/60);
+
+      set_parameters(frequency, wec_type);
+      calcCurrent(c_speed, theta, wec_type);
+    }
+   
+  }
